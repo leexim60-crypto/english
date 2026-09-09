@@ -100,9 +100,10 @@ app.get('/api/words/random', async (req, res) => {
   try {
     const book = normalizeBook(req.query.book)
     const size = Math.min(Math.max(Number(req.query.size) || 50, 1), 100)
+    // 注：TiDB 的预处理协议不支持 LIMIT 占位符，size 已钳制为 1-100 的整数，直接内联安全
     const rows = await query(
-      'SELECT * FROM words WHERE book = ? ORDER BY RAND() LIMIT ?',
-      [book, String(size)]
+      `SELECT * FROM words WHERE book = ? ORDER BY RAND() LIMIT ${Number(size)}`,
+      [book]
     )
     res.json({ words: rows.map(rowToWord) })
   } catch (err) {
@@ -141,8 +142,9 @@ app.get('/api/phrases/daily', async (req, res) => {
     if (total === 0) return res.json({ phrase: null })
     // 日期种子取模：同一天所有人看到同一条
     const seed = Number(date.replace(/-/g, ''))
+    // offset 由日期取模得出，为非负整数，内联安全（TiDB 不支持 LIMIT 占位符）
     const offset = seed % total
-    const rows = await query('SELECT * FROM phrases LIMIT ?, 1', [String(offset)])
+    const rows = await query(`SELECT * FROM phrases LIMIT ${Number(offset)}, 1`, [])
     const payload = { date, total, phrase: rows[0] || null }
     await cacheSet(cacheKey, JSON.stringify(payload), 30 * 3600)
     res.json({ source: 'fresh', ...payload })
@@ -156,7 +158,7 @@ app.get('/api/phrases/daily', async (req, res) => {
 app.get('/api/phrases/random', async (req, res) => {
   try {
     const size = Math.min(Math.max(Number(req.query.size) || 30, 1), 100)
-    const rows = await query('SELECT * FROM phrases ORDER BY RAND() LIMIT ?', [String(size)])
+    const rows = await query(`SELECT * FROM phrases ORDER BY RAND() LIMIT ${Number(size)}`, [])
     const totalRows = await query('SELECT COUNT(*) AS c FROM phrases', [])
     res.json({ phrases: rows, total: totalRows[0].c })
   } catch (err) {
@@ -208,8 +210,8 @@ app.get('/api/quiz/daily', async (req, res) => {
     if (book === 'cet6') {
       // 六级词池大，直接随机抽 40 题（10 道题 + 干扰项池）
       poolRows = await query(
-        'SELECT * FROM words WHERE book = ? ORDER BY RAND() LIMIT ?',
-        ['cet6', String(QUIZ_SIZE * 4)]
+        `SELECT * FROM words WHERE book = 'cet6' ORDER BY RAND() LIMIT ${Number(QUIZ_SIZE * 4)}`,
+        []
       )
     } else {
       poolRows = await query("SELECT * FROM words WHERE book = 'core' ORDER BY id", [])

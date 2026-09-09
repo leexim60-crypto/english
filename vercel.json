@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://你的应用名.onrender.com/api/:path*"
+      "destination": "https://english-zyur.onrender.com/api/:path*"
     }
   ]
 }
