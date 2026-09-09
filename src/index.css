@@ -1257,3 +1257,364 @@ html[data-theme='dark'] .modal-body h3 {
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================================
+   移动端适配（手机）
+   ============================================================ */
+
+/* 汉堡按钮：仅手机显示 */
+.navbar-burger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 42px;
+  height: 42px;
+  padding: 0 9px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.navbar-burger span {
+  display: block;
+  height: 2.5px;
+  width: 100%;
+  background: var(--text);
+  border-radius: 2px;
+  transition: transform 0.25s, opacity 0.2s;
+}
+
+.navbar-burger.burger-open span:nth-child(1) {
+  transform: translateY(7.5px) rotate(45deg);
+}
+.navbar-burger.burger-open span:nth-child(2) {
+  opacity: 0;
+}
+.navbar-burger.burger-open span:nth-child(3) {
+  transform: translateY(-7.5px) rotate(-45deg);
+}
+
+/* 抽屉菜单 */
+.navbar-drawer-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 98;
+  animation: fadeIn 0.2s ease;
+}
+
+.navbar-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(78vw, 300px);
+  background: var(--card);
+  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.18);
+  z-index: 99;
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: drawerIn 0.25s ease;
+  overflow-y: auto;
+}
+
+@keyframes drawerIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.drawer-item {
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 14px 16px;
+  font-size: 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.15s;
+}
+
+.drawer-item:active {
+  background: #eff6ff;
+}
+
+.drawer-item-active {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+}
+
+html[data-theme='dark'] .drawer-item:active {
+  background: #334155;
+}
+
+/* ===== 手机宽度（< 768px） ===== */
+@media (max-width: 768px) {
+  /* 导航栏：隐藏横向菜单，显示汉堡 */
+  .navbar {
+    padding: 10px 14px;
+  }
+  .navbar-menu {
+    display: none;
+  }
+  .navbar-burger {
+    display: flex;
+  }
+  .navbar-brand {
+    padding: 0;
+    font-size: 18px;
+    gap: 8px;
+    min-width: 0;
+  }
+  .logo {
+    width: 36px;
+    height: 36px;
+    font-size: 13px;
+    border-radius: 9px;
+    flex-shrink: 0;
+  }
+  .brand-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* 主体留白收紧 */
+  .main {
+    padding: 20px 14px;
+  }
+
+  /* 首页 */
+  .hero {
+    padding: 28px 8px 24px;
+  }
+  .hero h1 {
+    font-size: 28px;
+  }
+  .hero-sub {
+    font-size: 15px;
+  }
+  .sentence-card {
+    padding: 22px 16px;
+  }
+  .sentence-en {
+    font-size: 18px;
+  }
+  .sentence-cn {
+    font-size: 14px;
+  }
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .stat-card {
+    padding: 16px 10px;
+  }
+  .stat-value {
+    font-size: 26px;
+  }
+  .stat-label {
+    font-size: 13px;
+  }
+  .due-card {
+    padding: 14px 16px;
+    font-size: 14px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  /* 卡片页通用 */
+  .card-page {
+    padding: 22px 16px;
+  }
+
+  /* 单词卡片 */
+  .card-3d {
+    height: 340px;
+  }
+  .card-word {
+    font-size: 34px;
+  }
+  .card-meaning {
+    font-size: 22px;
+  }
+  .card-phonetic {
+    font-size: 15px;
+  }
+  .example-en {
+    font-size: 14px;
+  }
+  .example-cn {
+    font-size: 13px;
+  }
+  /* 控制按钮换行堆叠，触控目标加大 */
+  .card-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+  }
+  .card-controls .btn {
+    padding: 14px 10px;
+    font-size: 15px;
+  }
+  .card-controls .btn:nth-child(1),
+  .card-controls .btn:nth-child(4) {
+    grid-column: span 1;
+  }
+  .card-controls .btn:nth-child(2),
+  .card-controls .btn:nth-child(3) {
+    grid-column: span 1;
+  }
+  .level-tabs,
+  .book-tabs {
+    gap: 8px;
+  }
+  .chip {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+  .book-tab {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+
+  /* 测验 */
+  .quiz-word {
+    font-size: 30px;
+  }
+  .quiz-word-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .quiz-option {
+    padding: 14px 14px;
+    font-size: 15px;
+    /* 加大触控区，长释义自动换行 */
+    min-height: 50px;
+    white-space: normal;
+    line-height: 1.5;
+  }
+  .quiz-header {
+    font-size: 13px;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .quiz-stats-row {
+    gap: 8px;
+  }
+  .quiz-stat-num {
+    font-size: 22px;
+  }
+
+  /* 生词本 */
+  .wordbook-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .wordbook-search {
+    width: 100%;
+  }
+  .wordbook-filters {
+    justify-content: center;
+  }
+  .wordbook-filters .chip {
+    flex: 1;
+  }
+  .wordbook-item {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+  }
+  .wordbook-item .wordbook-actions {
+    justify-content: flex-end;
+  }
+  .wordbook-word {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .wordbook-word strong {
+    font-size: 18px;
+  }
+  .due-banner {
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+
+  /* 短语 */
+  .phrase-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  .phrase-en {
+    font-size: 15px;
+  }
+  .phrase-cn {
+    font-size: 13px;
+  }
+
+  /* 弹窗：更高的高度占比，正文内边距收紧 */
+  .modal-overlay {
+    padding: 10px;
+    align-items: stretch;
+  }
+  .modal-box {
+    max-height: 92vh;
+  }
+  .modal-header {
+    padding: 14px 16px 10px;
+  }
+  .modal-body {
+    padding: 4px 16px 8px;
+  }
+  .modal-body li {
+    font-size: 13.5px;
+  }
+  .modal-footer {
+    padding: 12px 16px 14px;
+  }
+  .kbd-table {
+    grid-template-columns: 1fr;
+  }
+
+  /* 通用按钮加大触控 */
+  .btn {
+    padding: 11px 16px;
+  }
+  .btn-lg {
+    padding: 13px 28px;
+  }
+  .footer {
+    font-size: 12px;
+    padding: 14px;
+  }
+}
+
+/* ===== 超窄屏（< 380px，如 iPhone SE） ===== */
+@media (max-width: 380px) {
+  .hero h1 {
+    font-size: 24px;
+  }
+  .card-word {
+    font-size: 28px;
+  }
+  .card-meaning {
+    font-size: 19px;
+  }
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .quiz-options {
+    gap: 9px;
+  }
+  .brand-name {
+    max-width: 40vw;
+  }
+}
