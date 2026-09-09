@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../api.js'
+import { speak } from '../utils/speak.js'
 
 /**
  * 短语学习：每日短语 + 短语库浏览（自主选择学习）
@@ -145,7 +146,16 @@ export default function Phrases({ source }) {
           <p className="sentence-en">加载中…</p>
         ) : daily ? (
           <>
-            <p className="sentence-en">“{daily.phrase}”</p>
+            <p className="sentence-en">
+              “{daily.phrase}”
+              <button
+                className="speak-btn speak-btn-inline speak-btn-on-dark"
+                onClick={() => speak(daily.phrase)}
+                title="播放发音"
+              >
+                🔊
+              </button>
+            </p>
             <p className="sentence-cn">{daily.translation}</p>
             {daily.word && (
               <p className="sentence-author">关联单词：{daily.word}</p>
@@ -206,7 +216,20 @@ export default function Phrases({ source }) {
                 return (
                   <div key={p.id} className={`phrase-item ${isLearned ? 'phrase-learned' : ''}`}>
                     <div className="phrase-main" onClick={() => toggleReveal(p.id)}>
-                      <span className="phrase-en">{p.phrase}</span>
+                      <span className="phrase-en">
+                        {p.phrase}
+                        <button
+                          className="speak-btn-inline-sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            speak(p.phrase)
+                          }}
+                          onTouchEnd={(e) => e.stopPropagation()}
+                          title="播放发音"
+                        >
+                          🔊
+                        </button>
+                      </span>
                       {isRevealed ? (
                         <span className="phrase-cn">{p.translation}</span>
                       ) : (
@@ -241,7 +264,19 @@ export default function Phrases({ source }) {
               {reviewList.map((p) => (
                 <div key={p.id} className="phrase-item phrase-learned">
                   <div className="phrase-main">
-                    <span className="phrase-en">{p.phrase}</span>
+                    <span className="phrase-en">
+                      {p.phrase}
+                      <button
+                        className="speak-btn-inline-sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          speak(p.phrase)
+                        }}
+                        title="播放发音"
+                      >
+                        🔊
+                      </button>
+                    </span>
                     <span className="phrase-cn">{p.translation}</span>
                   </div>
                   <button

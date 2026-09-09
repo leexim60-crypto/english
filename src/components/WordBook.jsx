@@ -164,6 +164,7 @@ export default function WordBook({ words, favorites, toggleFavorite }) {
                 e.stopPropagation()
                 speak(reviewCard.word)
               }}
+              onTouchEnd={(e) => e.stopPropagation()}
               title="播放发音"
             >
               🔊

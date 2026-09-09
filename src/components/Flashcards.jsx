@@ -310,6 +310,7 @@ export default function Flashcards({ words, counts, source, favorites, toggleFav
               e.stopPropagation()
               speak(card.word)
             }}
+            onTouchEnd={(e) => e.stopPropagation()}
             title="播放发音"
           >
             🔊

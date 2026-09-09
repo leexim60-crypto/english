@@ -1,4 +1,5 @@
 import { getStreak, getDueIds } from '../utils/review.js'
+import { speak } from '../utils/speak.js'
 
 export default function DailySentence({ onGo, onReview, onHelp, sentences, counts, favorites }) {
   // 根据日期选择"每日一句"
@@ -46,7 +47,16 @@ export default function DailySentence({ onGo, onReview, onHelp, sentences, count
       {sentence && (
         <section className="sentence-card">
           <div className="sentence-label">📅 每日一句 · {today.toLocaleDateString('zh-CN')}</div>
-          <p className="sentence-en">“{sentence.en}”</p>
+          <p className="sentence-en">
+            “{sentence.en}”
+            <button
+              className="speak-btn speak-btn-inline speak-btn-on-dark"
+              onClick={() => speak(sentence.en)}
+              title="朗读整句"
+            >
+              🔊
+            </button>
+          </p>
           <p className="sentence-cn">{sentence.cn}</p>
           <p className="sentence-author">—— {sentence.author}</p>
         </section>

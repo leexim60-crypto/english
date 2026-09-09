@@ -763,6 +763,18 @@ body {
   font-style: italic;
 }
 
+/* ===== 发音按钮：阻止移动端点击高亮扩散到卡片 ===== */
+.speak-btn,
+.fav-btn {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* 移动端所有按钮去掉系统默认蓝色高亮 */
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* ===== 新增：标记"不认识"后的提示条 ===== */
 .unknown-banner {
   background: linear-gradient(135deg, #fef3c7, #fde68a);
@@ -801,6 +813,45 @@ body {
   font-size: 17px;
   margin-top: 0;
   flex-shrink: 0;
+}
+
+/* 深色背景（每日一句/每日短语卡片）上的发音按钮 */
+.speak-btn-on-dark {
+  background: rgba(255, 255, 255, 0.18);
+  vertical-align: middle;
+  margin-left: 10px;
+}
+
+.speak-btn-on-dark:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+/* 短语列表里的小号发音按钮（内联在短语文本后） */
+.speak-btn-inline-sm {
+  border: none;
+  background: #eff6ff;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  font-size: 13px;
+  cursor: pointer;
+  margin-left: 8px;
+  vertical-align: middle;
+  flex-shrink: 0;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.speak-btn-inline-sm:hover {
+  transform: scale(1.15);
+  background: #dbeafe;
+}
+
+html[data-theme='dark'] .speak-btn-inline-sm {
+  background: #334155;
+}
+
+html[data-theme='dark'] .speak-btn-inline-sm:hover {
+  background: #475569;
 }
 
 /* ===== 新增：测验页收藏后立即展示释义 ===== */
