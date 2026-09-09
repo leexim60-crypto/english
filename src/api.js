@@ -18,6 +18,29 @@ export async function fetchWithTimeout(path, options = {}, timeout = 5000) {
 }
 
 export const api = {
+  // ===== 用户认证 =====
+  register: (username, password, email) =>
+    fetchWithTimeout(
+      '/auth/register',
+      { method: 'POST', body: JSON.stringify({ username, password, email }) }
+    ),
+  login: (username, password) =>
+    fetchWithTimeout(
+      '/auth/login',
+      { method: 'POST', body: JSON.stringify({ username, password }) }
+    ),
+  getUserData: (token) =>
+    fetchWithTimeout('/user/data', { headers: { Authorization: `Bearer ${token}` } }, 8000),
+  uploadUserData: (token, key, value) =>
+    fetchWithTimeout(
+      '/user/data',
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ key, value }),
+      },
+      8000
+    ),
   // 精选词库 + 每日一句 + 分册统计
   getWords: () => fetchWithTimeout('/words', {}, 5000),
   // 随机取一批单词（六级卡片流）

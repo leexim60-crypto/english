@@ -99,6 +99,16 @@ export default function HelpModal({ open, onClose }) {
           </section>
 
           <section>
+            <h3>🔐 账号登录</h3>
+            <ul>
+              <li>点导航栏「🔐 登录」可注册/登录，用户名 2-16 位，密码至少 6 位。</li>
+              <li>登录后生词本、学习记录、复习进度、打卡等数据<b>云端同步</b>，换设备不丢。</li>
+              <li>登录一次后 <b>30 天免登录</b>；退出登录不会删除云端数据，下次登录自动找回。</li>
+              <li>不登录也可正常使用全部功能，数据仅保存在本浏览器。</li>
+            </ul>
+          </section>
+
+          <section>
             <h3>🏠 首页 & 其他</h3>
             <ul>
               <li>首页展示词汇量、已学习/待学习、<b>连续打卡天数</b>和待复习提醒。</li>
@@ -107,7 +117,7 @@ export default function HelpModal({ open, onClose }) {
                 导航栏 <b>● 在线 / ○ 离线</b> 徽章表示后端状态：离线时自动使用本地精选词库，
                 六级词库和在线统计需要后端在线（server 目录 <code>npm start</code>）。
               </li>
-              <li>学习进度、生词本、复习数据都保存在浏览器本地（localStorage），清除浏览器数据会丢失。</li>
+              <li>单词、短语、每日一句均可点 <b>🔊</b> 朗读（真人词典发音为主，不支持时自动切合成语音）。</li>
             </ul>
           </section>
         </div>

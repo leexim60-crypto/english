@@ -1287,6 +1287,130 @@ html[data-theme='dark'] .modal-body h3 {
   }
 }
 
+/* ===== 新增：登录/注册弹窗与用户区 ===== */
+.auth-modal {
+  max-width: 420px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px 24px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.auth-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.auth-field input {
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: 15px;
+  background: var(--card);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.auth-field input:focus {
+  border-color: var(--primary);
+}
+
+.auth-error {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13.5px;
+  text-align: left;
+}
+
+html[data-theme='dark'] .auth-error {
+  background: #7f1d1d;
+  border-color: #991b1b;
+  color: #fecaca;
+}
+
+html[data-theme='dark'] .auth-field input {
+  border-color: #334155;
+}
+
+.auth-submit {
+  width: 100%;
+}
+
+.auth-switch {
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.auth-switch button {
+  border: none;
+  background: none;
+  color: var(--primary);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 4px;
+  font-size: 14px;
+}
+
+.auth-note {
+  font-size: 12.5px;
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* 导航栏用户区 */
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav-username {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-login {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* 抽屉里的用户名 */
+.drawer-user {
+  text-align: center;
+  padding: 14px;
+  font-weight: 700;
+  background: #eff6ff;
+  border-radius: 12px;
+  color: var(--primary-dark);
+  margin-bottom: 6px;
+}
+
+html[data-theme='dark'] .drawer-user {
+  background: #1e3a5f;
+  color: #93c5fd;
+}
+
 /* ===== 响应式 ===== */
 @media (max-width: 640px) {
   .navbar {
@@ -1633,6 +1757,11 @@ html[data-theme='dark'] .drawer-item:active {
   }
   .kbd-table {
     grid-template-columns: 1fr;
+  }
+
+  /* 登录弹窗在小屏占满宽度 */
+  .auth-modal {
+    max-width: none;
   }
 
   /* 通用按钮加大触控 */

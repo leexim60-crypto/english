@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-export default function Navbar({ tab, setTab, favoritesCount, source, loading, onHelp }) {
+export default function Navbar({ tab, setTab, favoritesCount, source, loading, onHelp, auth, onLogin, onLogout }) {
   const items = [
     { key: 'home', label: '🏠 首页' },
     { key: 'cards', label: '📚 单词卡片' },
@@ -68,6 +68,20 @@ export default function Navbar({ tab, setTab, favoritesCount, source, loading, o
         <button className="nav-item" onClick={onHelp} title="查看使用手册">
           ❓ 使用手册
         </button>
+        {auth ? (
+          <div className="nav-user">
+            <span className="nav-username" title={auth.user.username}>
+              👤 {auth.user.username}
+            </span>
+            <button className="nav-item nav-logout" onClick={onLogout} title="退出登录（云端数据保留）">
+              退出
+            </button>
+          </div>
+        ) : (
+          <button className="nav-item nav-login" onClick={onLogin}>
+            🔐 登录
+          </button>
+        )}
         <button
           className="nav-item theme-toggle"
           onClick={() => setDark((d) => !d)}
@@ -92,6 +106,9 @@ export default function Navbar({ tab, setTab, favoritesCount, source, loading, o
         <>
           <div className="navbar-drawer-mask" onClick={() => setMenuOpen(false)} />
           <div className="navbar-drawer">
+            {auth && (
+              <div className="drawer-user">👤 {auth.user.username}</div>
+            )}
             {items.map((item) => (
               <button
                 key={item.key}
@@ -104,6 +121,15 @@ export default function Navbar({ tab, setTab, favoritesCount, source, loading, o
             <button className="drawer-item" onClick={() => { onHelp(); setMenuOpen(false) }}>
               ❓ 使用手册
             </button>
+            {auth ? (
+              <button className="drawer-item" onClick={() => { onLogout(); setMenuOpen(false) }}>
+                🚪 退出登录
+              </button>
+            ) : (
+              <button className="drawer-item" onClick={() => { onLogin(); setMenuOpen(false) }}>
+                🔐 登录 / 注册
+              </button>
+            )}
             <button className="drawer-item" onClick={() => setDark((d) => !d)}>
               {dark ? '☀️ 亮色模式' : '🌙 暗色模式'}
             </button>

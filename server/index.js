@@ -4,6 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { existsSync } from 'node:fs'
 import { PORT } from './config.js'
+import { register, login, authOptional, authRequired, ensureAuthTables } from './auth.js'
 import { query, rowToWord } from './db.js'
 import {
   cacheGet,
@@ -17,6 +18,11 @@ import {
 const app = express()
 app.use(cors())
 app.use(express.json())
+
+// 启动时确保用户表存在（幂等）
+ensureAuthTables().catch((e) => console.error('[auth] 用户表初始化失败:', e.message))
+// 所有请求尝试解析登录态（有效则挂 req.user，不强制）
+app.use(authOptional)
 
 // ===== 生产环境：托管前端构建产物（dist/），单端口同时服务页面和 API =====
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -66,6 +72,66 @@ const QUIZ_SIZE = 10
 // ===== 健康检查 =====
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, redis: redisAlive() })
+})
+
+// ===== 用户认证 =====
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { username, password, email } = req.body || {}
+    const result = await register(username, password, email)
+    res.json(result)
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || '注册失败' })
+  }
+})
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { username, password } = req.body || {}
+    const result = await login(username, password)
+    res.json(result)
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || '登录失败' })
+  }
+})
+
+// ===== 用户数据同步（生词本/学习记录/复习调度等，按 key 分片存储） =====
+// 拉取：登录后一次拉回全部数据
+app.get('/api/user/data', authRequired, async (req, res) => {
+  try {
+    const rows = await query('SELECT data_key, data_json FROM user_data WHERE user_id = ?', [
+      req.user.id,
+    ])
+    const data = {}
+    for (const r of rows) data[r.data_key] = JSON.parse(r.data_json)
+    res.json({ data })
+  } catch (err) {
+    console.error('[/api/user/data GET]', err.message)
+    res.status(503).json({ error: '数据同步失败' })
+  }
+})
+
+// 上传：整体覆盖某个 key 的数据（前端数据量小，全量覆盖最简单可靠）
+app.post('/api/user/data', authRequired, async (req, res) => {
+  try {
+    const { key, value } = req.body || {}
+    if (!key || !/^[a-zA-Z_]+$/.test(key) || key.length > 32) {
+      return res.status(400).json({ error: '参数不合法' })
+    }
+    const json = JSON.stringify(value)
+    if (json.length > 512 * 1024) {
+      return res.status(400).json({ error: '数据过大' })
+    }
+    await query(
+      `INSERT INTO user_data (user_id, data_key, data_json) VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE data_json = VALUES(data_json), updated_at = CURRENT_TIMESTAMP`,
+      [req.user.id, key, json]
+    )
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('[/api/user/data POST]', err.message)
+    res.status(503).json({ error: '数据同步失败' })
+  }
 })
 
 // ===== 精选词库 + 每日一句 + 总量统计（Redis 缓存 1 小时） =====
