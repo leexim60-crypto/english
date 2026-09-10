@@ -6,9 +6,10 @@ export async function fetchWithTimeout(path, options = {}, timeout = 5000) {
   const timer = setTimeout(() => controller.abort(), timeout)
   try {
     const res = await fetch(`${BASE}${path}`, {
-      // 注意：headers 必须合并而不能被 options 整体覆盖，否则带 Authorization 的请求会丢掉 Content-Type
-      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      // 注意：...options 必须在 headers 之前展开，否则 options.headers 会覆盖合并后的
+      // headers，丢失 Content-Type，导致带 Authorization 的 POST 上传静默失败（HTTP 400）
       ...options,
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
       signal: controller.signal,
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
