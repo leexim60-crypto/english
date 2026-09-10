@@ -250,7 +250,7 @@ export default function WordBook({ words, favorites, toggleFavorite }) {
           </button>
           <button
             className={`chip ${filter === 'cet6' ? 'chip-active' : ''}`}
-            style={filter === 'cet6' ? { background: '#8b5cf6', color: '#fff' } : {}}
+            style={filter === 'cet6' ? { background: '#0d9488', color: '#fff' } : {}}
             onClick={() => setFilter('cet6')}
           >
             六级 {cet6Count}

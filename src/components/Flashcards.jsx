@@ -292,7 +292,7 @@ export default function Flashcards({ words, counts, source, favorites, toggleFav
           <span
             className="card-level"
             style={{
-              background: book === 'cet6' ? '#8b5cf6' : LEVEL_COLORS[card.level] || '#3b82f6',
+              background: book === 'cet6' ? '#0d9488' : LEVEL_COLORS[card.level] || '#3b82f6',
             }}
           >
             {book === 'cet6' ? '六级' : LEVEL_NAMES[card.level] || '基础'}
