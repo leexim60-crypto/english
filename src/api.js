@@ -6,7 +6,8 @@ export async function fetchWithTimeout(path, options = {}, timeout = 5000) {
   const timer = setTimeout(() => controller.abort(), timeout)
   try {
     const res = await fetch(`${BASE}${path}`, {
-      headers: { 'Content-Type': 'application/json' },
+      // 注意：headers 必须合并而不能被 options 整体覆盖，否则带 Authorization 的请求会丢掉 Content-Type
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
       ...options,
       signal: controller.signal,
     })
