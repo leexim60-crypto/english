@@ -195,10 +195,31 @@ export default function App() {
     return () => clearTimeout(t)
   }, [favorites, auth, syncReady, uploadAll])
 
-  // 触发点 2：每 30s 定时 + 切后台时立即同步（覆盖 learnedWords/studyLog 等直写 localStorage 的数据）
+  // 触发点 2：每 30s 双向同步（上传本地变更 + 拉取云端新数据）
+  // 覆盖 learnedWords/studyLog 等直写 localStorage 的数据，也解决
+  // “另一台设备上传了新数据而本页一直开着看不到”的问题
   useEffect(() => {
     if (!auth || !syncReady) return
-    const iv = setInterval(uploadAll, 30000)
+    const sync = async () => {
+      try {
+        const changed = await pullAndMerge(auth.token)
+        if (changed) {
+          // 拉到了新数据：更新 React 状态（favorites），
+          // 其他列表组件在切换标签时重新读 localStorage；
+          // 并重置上传指纹，把合并结果回传云端（保证两台设备最终一致）
+          try {
+            setFavorites(JSON.parse(localStorage.getItem('favorites') || '[]'))
+          } catch {
+            /* ignore */
+          }
+          lastUploadedRef.current = {}
+        }
+      } catch {
+        /* 拉取失败不影响上传 */
+      }
+      uploadAll()
+    }
+    const iv = setInterval(sync, 30000)
     const onHide = () => {
       if (document.visibilityState === 'hidden') uploadAll()
     }
