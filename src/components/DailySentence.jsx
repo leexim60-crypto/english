@@ -20,10 +20,10 @@ export default function DailySentence({ onGo, onReview, onHelp, sentences, count
   const cet6 = counts?.cet6 || 0
   const total = core + cet6
   const stats = [
-    { label: cet6 > 0 ? `词汇总量（含六级 ${cet6}）` : '词汇总量', value: total, color: '#3b82f6' },
-    { label: '已学习', value: learned.length, color: '#22c55e' },
-    { label: '待学习', value: Math.max(total - learned.length, 0), color: '#f59e0b' },
-    { label: `连续打卡${streak > 0 ? ' 🔥' : ''}`, value: `${streak} 天`, color: '#8b5cf6' },
+    { icon: '📚', label: cet6 > 0 ? `词汇总量 · 含六级 ${cet6}` : '词汇总量', value: total, color: '#4f6bf2' },
+    { icon: '✅', label: '已学习', value: learned.length, color: '#10b981' },
+    { icon: '⏳', label: '待学习', value: Math.max(total - learned.length, 0), color: '#f59e0b' },
+    { icon: '🔥', label: '连续打卡', value: `${streak} 天`, color: '#f43f5e' },
   ]
 
   return (
@@ -59,7 +59,10 @@ export default function DailySentence({ onGo, onReview, onHelp, sentences, count
 
       <section className="stats">
         {stats.map((s) => (
-          <div className="stat-card" key={s.label}>
+          <div className="stat-card" key={s.label} style={{ '--c': s.color }}>
+            <span className="stat-icon" style={{ color: s.color, background: `${s.color}1f` }}>
+              {s.icon}
+            </span>
             <div className="stat-value" style={{ color: s.color }}>
               {s.value}
             </div>

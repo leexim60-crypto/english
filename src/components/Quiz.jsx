@@ -283,7 +283,7 @@ export default function Quiz({ words, source, favorites, toggleFavorite }) {
     return (
       <div className="quiz-result card-page">
         <h2>测验完成！</h2>
-        <div className="score-circle">
+        <div className="score-circle" style={{ '--p': accuracy }}>
           <span className="score-num">{score}</span>
           <span className="score-total">/ {quiz.length}</span>
         </div>
@@ -338,7 +338,7 @@ export default function Quiz({ words, source, favorites, toggleFavorite }) {
           </div>
         )}
         <div className="quiz-options">
-          {q.options.map((opt) => {
+          {q.options.map((opt, i) => {
             let cls = 'quiz-option'
             if (selected !== null) {
               if (opt.id === q.answerId) cls += ' correct'
@@ -346,7 +346,8 @@ export default function Quiz({ words, source, favorites, toggleFavorite }) {
             }
             return (
               <button key={opt.id} className={cls} onClick={() => choose(opt.id)}>
-                {opt.meaning}
+                <span className="opt-letter">{String.fromCharCode(65 + i)}</span>
+                <span className="opt-text">{opt.meaning}</span>
               </button>
             )          })}
         </div>
