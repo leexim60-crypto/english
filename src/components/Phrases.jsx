@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../api.js'
 import { speak } from '../utils/speak.js'
+import { lsGetJSON, lsSet } from '../utils/storage.js'
 
 /**
  * 短语学习：每日短语 + 短语库浏览（自主选择学习）
@@ -27,13 +28,7 @@ export default function Phrases({ source }) {
   })
 
   // 已学会（localStorage 持久化）
-  const [learnedIds, setLearnedIds] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('learnedPhrases') || '[]')
-    } catch {
-      return []
-    }
-  })
+  const [learnedIds, setLearnedIds] = useState(() => lsGetJSON('learnedPhrases', []))
   const learnedSet = new Set(learnedIds)
 
   // 复习模式：查看已学会列表
@@ -92,7 +87,7 @@ export default function Phrases({ source }) {
   const toggleLearned = (id) => {
     setLearnedIds((prev) => {
       const next = prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-      localStorage.setItem('learnedPhrases', JSON.stringify(next))
+      lsSet('learnedPhrases', next)
       return next
     })
   }

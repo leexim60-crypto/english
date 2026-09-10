@@ -1,5 +1,6 @@
 import { getStreak, getDueIds } from '../utils/review.js'
 import { speak } from '../utils/speak.js'
+import { lsGetJSON } from '../utils/storage.js'
 
 export default function DailySentence({ onGo, onReview, onHelp, sentences, counts, favorites }) {
   // 根据日期选择"每日一句"
@@ -9,13 +10,7 @@ export default function DailySentence({ onGo, onReview, onHelp, sentences, count
   const sentence =
     safeSentences.length > 0 ? safeSentences[index % safeSentences.length] : null
 
-  const learned = (() => {
-    try {
-      return JSON.parse(localStorage.getItem('learnedWords') || '[]')
-    } catch {
-      return []
-    }
-  })()
+  const learned = lsGetJSON('learnedWords', [])
 
   const safeFavorites = Array.isArray(favorites) ? favorites : []
   const streak = getStreak()

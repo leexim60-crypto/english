@@ -1,11 +1,13 @@
 /**
  * 生词本复习调度（简化版 SM-2 间隔重复）+ 学习打卡记录。
- * 全部数据存 localStorage，纯函数式工具，供各组件直接调用。
+ * 学习数据按账号隔离存储（见 utils/storage.js）。
  *
  * 调度规则：
  *  - 认识：间隔翻倍（1 → 2 → 4 → 8 → ... 天，上限 60 天）
  *  - 不认识：重置为待复习（立即到期）
  */
+
+import { lsGetJSON, lsSet } from './storage.js'
 
 const META_KEY = 'wordReviewMeta'
 const LOG_KEY = 'studyLog'
@@ -17,19 +19,11 @@ function todayStr(d = new Date()) {
 }
 
 export function loadMeta() {
-  try {
-    return JSON.parse(localStorage.getItem(META_KEY) || '{}')
-  } catch {
-    return {}
-  }
+  return lsGetJSON(META_KEY, {})
 }
 
 function saveMeta(meta) {
-  try {
-    localStorage.setItem(META_KEY, JSON.stringify(meta))
-  } catch {
-    /* ignore */
-  }
+  lsSet(META_KEY, meta)
 }
 
 /** 记录一次复习结果 */
@@ -83,23 +77,15 @@ export function getNextReviewText(id) {
 
 /** 记录今天有学习行为（打卡） */
 export function touchToday() {
-  try {
-    const log = JSON.parse(localStorage.getItem(LOG_KEY) || '{}')
-    log[todayStr()] = true
-    localStorage.setItem(LOG_KEY, JSON.stringify(log))
-  } catch {
-    /* ignore */
-  }
+  const log = lsGetJSON(LOG_KEY, {})
+  log[todayStr()] = true
+  lsSet(LOG_KEY, log)
 }
 
 /** 连续打卡天数（今天没学也不断签，从昨天往回数） */
 export function getStreak() {
-  let log
-  try {
-    log = JSON.parse(localStorage.getItem(LOG_KEY) || '{}')
-  } catch {
-    return 0
-  }
+  const log = lsGetJSON(LOG_KEY, {})
+  if (!log) return 0
   let streak = 0
   const d = new Date()
   if (!log[todayStr()]) d.setDate(d.getDate() - 1) // 今天还没学不算断

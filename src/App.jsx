@@ -10,20 +10,20 @@ import Phrases from './components/Phrases.jsx'
 import { useWords } from './hooks/useWords.js'
 import { api } from './api.js'
 import { clearReview } from './utils/review.js'
+import { lsGetJSON, lsSet, importAnonymousData } from './utils/storage.js'
 
 /**
- * 数据同步架构：
+ * 数据同步架构（v3：按账号隔离）：
  *
- *  - localStorage 始终是唯一数据源（未登录也完全可用）
- *  - 已登录时：应用启动 / 登录成功 → 先拉云端数据与本地深度合并（只增不丢）
- *    → 合并完成后才开启上传（syncReady），防止旧的本地数据覆盖云端
- *  - 上传时机：favorites 变化（1.5s 防抖）+ 每 30s 定时 + 页面切到后台时
- *    （learnedWords/studyLog 等由各组件直接写 localStorage，不走 React 状态，需轮询）
+ *  - 所有学习数据经 utils/storage.js 按账号隔离存储：
+ *      已登录 → "u<userId>:favorites" 等（每个账号独立空间）
+ *      未登录 → 匿名空间（无前缀）
+ *  - 登录：匿名空间数据导入账号空间（仅首次）→ 拉云端深度合并（只增不丢）
+ *          → 完成后才开启上传（syncReady 门控，防止旧数据覆盖云端）
+ *  - 退出：回到匿名空间，看不到任何账号数据（账号数据留在本地+云端）
+ *  - 已登录会话：每 30s 双向同步（上传本地变更 + 拉取云端新数据并合并）
  *
- * 合并策略（并集/取优，两台设备的数据都不会丢）：
- *  - 数组（favorites/learnedWords/learnedPhrases）→ 去重并集
- *  - wordReviewMeta {id:{interval,reps,next}} → 逐字段取较大值（进度更优者胜）
- *  - studyLog {日期:true} → 键并集
+ * 合并策略：数组并集 / 复习进度逐字段取优 / 打卡日期并集 —— 两台设备数据都不丢。
  */
 const SYNC_KEYS = ['favorites', 'learnedWords', 'wordReviewMeta', 'learnedPhrases', 'studyLog']
 const AUTH_KEY = 'auth'
@@ -62,27 +62,22 @@ function deepMerge(local, cloud) {
   return cloud === undefined ? local : cloud
 }
 
-/** 拉取云端数据并与本地合并，返回是否有变化 */
+/** 拉取云端数据并与当前账号空间合并，返回是否有变化 */
 async function pullAndMerge(token) {
   const { data } = await api.getUserData(token)
   let changed = false
   for (const key of SYNC_KEYS) {
     const cloud = data[key]
     if (cloud === undefined) continue
-    let local = null
-    try {
-      local = JSON.parse(localStorage.getItem(key) || 'null')
-    } catch {
-      local = null
-    }
+    const local = lsGetJSON(key, null)
     if (local === null) {
-      localStorage.setItem(key, JSON.stringify(cloud))
+      lsSet(key, cloud)
       changed = true
       continue
     }
     const merged = deepMerge(local, cloud)
     if (JSON.stringify(merged) !== JSON.stringify(local)) {
-      localStorage.setItem(key, JSON.stringify(merged))
+      lsSet(key, merged)
       changed = true
     }
   }
@@ -100,47 +95,42 @@ export default function App() {
   const lastUploadedRef = useRef({})
   const { words, sentences, counts, source, loading } = useWords()
 
-  // ===== 学习数据：localStorage 为唯一数据源 =====
-  const [favorites, setFavorites] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('favorites') || '[]')
-    } catch {
-      return []
-    }
-  })
-  useEffect(() => {
-    localStorage.setItem('favorites', JSON.stringify(favorites))
-  }, [favorites])
+  const [favorites, setFavorites] = useState(() => lsGetJSON('favorites', []))
 
   const toggleFavorite = (id) => {
     const removing = favorites.includes(id)
-    setFavorites((prev) =>
-      removing ? prev.filter((f) => f !== id) : [...prev, id]
-    )
+    const next = removing ? favorites.filter((f) => f !== id) : [...favorites, id]
+    setFavorites(next)
+    lsSet('favorites', next)
     // 从生词本移除时，同步清理复习调度数据
     if (removing) clearReview(id)
   }
 
   const handleLogout = useCallback(() => {
+    // 先清登录态（storage 层随之切回匿名空间），再从匿名空间读数据刷新界面
     localStorage.removeItem(AUTH_KEY)
     setAuth(null)
-    setSyncReady(true) // 未登录状态无需门控
+    setSyncReady(true)
     lastUploadedRef.current = {}
-    // 云端数据保留，下次登录还会合并回来
+    setFavorites(lsGetJSON('favorites', []))
+    // 账号数据留在本地隔离空间 + 云端，下次登录自动恢复
   }, [])
 
-  // ===== 首次拉取：登录成功 / 已登录的会话启动时，先合并云端再开上传 =====
+  // ===== 首次拉取：登录成功 / 已登录会话启动时，先合并云端再开上传 =====
   useEffect(() => {
     if (!auth || pullLockRef.current) return
     pullLockRef.current = true
     ;(async () => {
-      let ok = false
+      // 首次登录此账号：把匿名空间数据导入账号空间作为初始数据
+      importAnonymousData(auth.user.id)
+
+      let pulled = false
       // 冷启动的免费后端可能较慢，重试 3 次
-      for (let i = 0; i < 3 && !ok; i++) {
+      for (let i = 0; i < 3 && !pulled; i++) {
         try {
           const changed = await pullAndMerge(auth.token)
-          ok = true
-          if (changed) window.location.reload() // 有新数据 → 刷新让各组件重新读 localStorage
+          pulled = true
+          if (changed) window.location.reload() // 有新数据 → 刷新让所有组件重读隔离空间
         } catch (err) {
           if (/HTTP 401/.test(err.message || '')) {
             handleLogout() // token 过期
@@ -150,6 +140,7 @@ export default function App() {
         }
       }
       // 拉取始终失败（断网等）：照常允许上传，不能因为同步问题卡住学习
+      setFavorites(lsGetJSON('favorites', []))
       setSyncReady(true)
       pullLockRef.current = false
     })()
@@ -159,29 +150,18 @@ export default function App() {
     localStorage.setItem(AUTH_KEY, JSON.stringify(result))
     lastUploadedRef.current = {}
     setSyncReady(false)
-    setAuth(result) // 触发上面的拉取合并 effect
+    setAuth(result) // 触发上面的导入 + 拉取合并 effect
   }, [])
 
-  // ===== 上传：把所有 SYNC_KEYS 镜像到云端（未变化的 key 跳过） =====
+  // ===== 上传：把当前账号空间所有 SYNC_KEYS 镜像到云端（未变化的跳过） =====
   const uploadAll = useCallback(async () => {
     if (!auth) return
     for (const key of SYNC_KEYS) {
-      let raw = null
+      const raw = lsGetJSON(key, undefined)
+      if (raw === undefined || lastUploadedRef.current[key] === JSON.stringify(raw)) continue
       try {
-        raw = localStorage.getItem(key)
-      } catch {
-        continue
-      }
-      if (raw === null || lastUploadedRef.current[key] === raw) continue
-      let value
-      try {
-        value = JSON.parse(raw)
-      } catch {
-        continue
-      }
-      try {
-        await api.uploadUserData(auth.token, key, value)
-        lastUploadedRef.current[key] = raw
+        await api.uploadUserData(auth.token, key, raw)
+        lastUploadedRef.current[key] = JSON.stringify(raw)
       } catch {
         /* 本次失败，下轮再试 */
       }
@@ -196,22 +176,14 @@ export default function App() {
   }, [favorites, auth, syncReady, uploadAll])
 
   // 触发点 2：每 30s 双向同步（上传本地变更 + 拉取云端新数据）
-  // 覆盖 learnedWords/studyLog 等直写 localStorage 的数据，也解决
-  // “另一台设备上传了新数据而本页一直开着看不到”的问题
   useEffect(() => {
     if (!auth || !syncReady) return
     const sync = async () => {
       try {
         const changed = await pullAndMerge(auth.token)
         if (changed) {
-          // 拉到了新数据：更新 React 状态（favorites），
-          // 其他列表组件在切换标签时重新读 localStorage；
-          // 并重置上传指纹，把合并结果回传云端（保证两台设备最终一致）
-          try {
-            setFavorites(JSON.parse(localStorage.getItem('favorites') || '[]'))
-          } catch {
-            /* ignore */
-          }
+          // 拉到了新数据：更新界面状态，并把合并结果回传云端（两台设备最终一致）
+          setFavorites(lsGetJSON('favorites', []))
           lastUploadedRef.current = {}
         }
       } catch {

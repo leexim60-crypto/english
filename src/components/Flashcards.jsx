@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { api } from '../api.js'
 import { speak } from '../utils/speak.js'
 import { recordReview, touchToday } from '../utils/review.js'
+import { lsGetJSON, lsSet } from '../utils/storage.js'
 
 const LEVEL_NAMES = { 1: '基础', 2: '进阶', 3: '高阶' }
 const LEVEL_COLORS = { 1: '#22c55e', 2: '#f59e0b', 3: '#ef4444' }
@@ -23,13 +24,7 @@ export default function Flashcards({ words, counts, source, favorites, toggleFav
   const [flipped, setFlipped] = useState(false)
   // 刚标记"不认识"：翻转展示释义，停在当前卡片等待用户主动继续
   const [unknownRevealed, setUnknownRevealed] = useState(false)
-  const [learned, setLearned] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('learnedWords') || '[]')
-    } catch {
-      return []
-    }
-  })
+  const [learned, setLearned] = useState(() => lsGetJSON('learnedWords', []))
 
   // ===== 六级随机流状态 =====
   const [queue, setQueue] = useState([])
@@ -84,7 +79,7 @@ export default function Flashcards({ words, counts, source, favorites, toggleFav
 
   const saveLearned = (next) => {
     setLearned(next)
-    localStorage.setItem('learnedWords', JSON.stringify(next))
+    lsSet('learnedWords', next)
     touchToday()
   }
 
