@@ -11,7 +11,16 @@
  * 之后账号空间与云端同步，与匿名空间再无关系。
  */
 const AUTH_KEY = 'auth'
-const SYNC_KEYS = ['favorites', 'learnedWords', 'wordReviewMeta', 'learnedPhrases', 'studyLog']
+const SYNC_KEYS = [
+  'favorites',
+  'learnedWords',
+  'wordReviewMeta',
+  'learnedPhrases',
+  'studyLog',
+  'masteredPatterns',
+  'translationDrafts',
+  'translationDone',
+]
 
 /** 当前登录用户的数据空间前缀（未登录 = 匿名空间，无前缀） */
 export function spacePrefix() {

@@ -11,6 +11,8 @@ import Quiz from './components/Quiz.jsx'
 import DailySentence from './components/DailySentence.jsx'
 import WordBook from './components/WordBook.jsx'
 import Phrases from './components/Phrases.jsx'
+import SentencePatterns from './components/SentencePatterns.jsx'
+import Translation from './components/Translation.jsx'
 import useScrollToTop from './hooks/useScrollToTop.js'
 import { useWords } from './hooks/useWords.js'
 import { api } from './api.js'
@@ -31,7 +33,16 @@ import { toast } from './utils/toast.js'
  *
  * 合并策略：数组并集 / 复习进度逐字段取优 / 打卡日期并集 —— 两台设备数据都不丢。
  */
-const SYNC_KEYS = ['favorites', 'learnedWords', 'wordReviewMeta', 'learnedPhrases', 'studyLog']
+const SYNC_KEYS = [
+  'favorites',
+  'learnedWords',
+  'wordReviewMeta',
+  'learnedPhrases',
+  'studyLog',
+  'masteredPatterns',
+  'translationDrafts',
+  'translationDone',
+]
 const AUTH_KEY = 'auth'
 
 const TAB_TITLES = {
@@ -39,6 +50,8 @@ const TAB_TITLES = {
   cards: '单词卡片',
   quiz: '单词测验',
   phrases: '短语学习',
+  patterns: '高分句型',
+  translation: '翻译练习',
   wordbook: '生词本',
 }
 
@@ -254,6 +267,8 @@ export default function App() {
               onGo={() => setTab('cards')}
               onReview={() => setTab('wordbook')}
               onHelp={() => setHelpOpen(true)}
+              onPatterns={() => setTab('patterns')}
+              onTranslate={() => setTab('translation')}
               sentences={sentences}
               counts={counts}
               favorites={favorites}
@@ -272,6 +287,8 @@ export default function App() {
             <Quiz words={words} source={source} favorites={favorites} toggleFavorite={toggleFavorite} />
           )}
           {tab === 'phrases' && <Phrases source={source} />}
+          {tab === 'patterns' && <SentencePatterns />}
+          {tab === 'translation' && <Translation />}
           {tab === 'wordbook' && (
             <WordBook
               words={words}

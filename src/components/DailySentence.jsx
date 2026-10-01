@@ -21,7 +21,16 @@ function buildWeek() {
   return out
 }
 
-export default function DailySentence({ onGo, onReview, onHelp, sentences, counts, favorites }) {
+export default function DailySentence({
+  onGo,
+  onReview,
+  onHelp,
+  onPatterns,
+  onTranslate,
+  sentences,
+  counts,
+  favorites,
+}) {
   const today = new Date()
   const index = today.getFullYear() * 372 + today.getMonth() * 31 + today.getDate()
   const safeSentences = Array.isArray(sentences) && sentences.length > 0 ? sentences : []
@@ -172,6 +181,33 @@ export default function DailySentence({ onGo, onReview, onHelp, sentences, count
               已掌握 <b className="num">{mastered}%</b> · {learnedCount} / {total}
             </span>
           </div>
+        </section>
+      </Reveal>
+
+      {/* ================= 写作与翻译入口 ================= */}
+      <Reveal delay={120}>
+        <section className="module-grid">
+          <button className="module-card" onClick={onPatterns}>
+            <span className="module-icon">
+              <Icon name="sparkle" size={20} />
+            </span>
+            <span className="module-body">
+              <span className="module-title">高分句型</span>
+              <span className="module-desc">30 个四六级／考研作文句式，标注使用场景与易错点</span>
+            </span>
+            <Icon name="arrowRight" size={17} className="module-arrow" />
+          </button>
+
+          <button className="module-card" onClick={onTranslate}>
+            <span className="module-icon">
+              <Icon name="book" size={20} />
+            </span>
+            <span className="module-body">
+              <span className="module-title">翻译练习</span>
+              <span className="module-desc">历年真题 + 热点预测，附难点拆解与降级表达</span>
+            </span>
+            <Icon name="arrowRight" size={17} className="module-arrow" />
+          </button>
         </section>
       </Reveal>
 
