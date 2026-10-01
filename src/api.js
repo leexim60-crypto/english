@@ -44,7 +44,9 @@ export const api = {
       8000
     ),
   // 精选词库 + 每日一句 + 分册统计
-  getWords: () => fetchWithTimeout('/words', {}, 5000),
+  // 后端为 Render 免费实例，冷启动可达 30s+，超时给足；
+  // useWords 内部还有一次后台重试，冷启动恢复后会自动刷新为真实数量。
+  getWords: () => fetchWithTimeout('/words', {}, 45000),
   // 随机取一批单词（六级卡片流）
   getRandomWords: (book = 'cet6', size = 50) =>
     fetchWithTimeout(`/words/random?book=${book}&size=${size}`, {}, 8000),

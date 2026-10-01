@@ -17,7 +17,7 @@ import useScrollToTop from './hooks/useScrollToTop.js'
 import { useWords } from './hooks/useWords.js'
 import { api } from './api.js'
 import { clearReview } from './utils/review.js'
-import { lsGetJSON, lsSet, importAnonymousData } from './utils/storage.js'
+import { lsGetJSON, lsSet, importAnonymousData, SYNC_KEYS } from './utils/storage.js'
 import { toast } from './utils/toast.js'
 
 /**
@@ -33,16 +33,6 @@ import { toast } from './utils/toast.js'
  *
  * 合并策略：数组并集 / 复习进度逐字段取优 / 打卡日期并集 —— 两台设备数据都不丢。
  */
-const SYNC_KEYS = [
-  'favorites',
-  'learnedWords',
-  'wordReviewMeta',
-  'learnedPhrases',
-  'studyLog',
-  'masteredPatterns',
-  'translationDrafts',
-  'translationDone',
-]
 const AUTH_KEY = 'auth'
 
 const TAB_TITLES = {
@@ -68,7 +58,24 @@ function isPlainObject(v) {
   return v !== null && typeof v === 'object' && !Array.isArray(v)
 }
 
-/** 深度合并：数组取并集，对象递归合并，数字取大，其余取云端 */
+/** 两个值在结构上是否等价（用于判断合并结果有没有变化） */
+function sameJSON(a, b) {
+  try {
+    return JSON.stringify(a) === JSON.stringify(b)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * 深度合并：数组取并集，对象递归合并，数字取大，其余取云端。
+ *
+ * 重要：显式跳过 undefined / null / NaN。
+ * 之前云端的 null 值会被当成有效数据写回本地（JSON.stringify(null) = "null"），
+ * 下次读取时 JSON.parse("null") === null，又被判定为“本地为空”而重写，
+ * 于是每次 pullAndMerge 都返回 changed=true → 触发 window.location.reload() →
+ * 页面加载后又同步 → 又 reload，形成无限刷新。
+ */
 function deepMerge(local, cloud) {
   if (Array.isArray(local) && Array.isArray(cloud)) {
     return [...new Set([...local, ...cloud])]
@@ -78,6 +85,8 @@ function deepMerge(local, cloud) {
     for (const k of Object.keys(cloud)) {
       const l = local[k]
       const c = cloud[k]
+      // 云端该字段无效：保留本地
+      if (c === undefined || c === null) continue
       if (isPlainObject(l) && isPlainObject(c)) out[k] = deepMerge(l, c)
       else if (typeof l === 'number' && typeof c === 'number') out[k] = Math.max(l, c)
       else if (l === undefined) out[k] = c
@@ -86,7 +95,9 @@ function deepMerge(local, cloud) {
     }
     return out
   }
-  return cloud === undefined ? local : cloud
+  // 顶层：云端为空则保留本地
+  if (cloud === undefined || cloud === null) return local
+  return cloud
 }
 
 /** 拉取云端数据并与当前账号空间合并，返回是否有变化 */
@@ -95,7 +106,8 @@ async function pullAndMerge(token) {
   let changed = false
   for (const key of SYNC_KEYS) {
     const cloud = data[key]
-    if (cloud === undefined) continue
+    // 云端无此 key，或值是 null/undefined：视为“无数据”，不动本地
+    if (cloud === undefined || cloud === null) continue
     const local = lsGetJSON(key, null)
     if (local === null) {
       lsSet(key, cloud)
@@ -103,7 +115,7 @@ async function pullAndMerge(token) {
       continue
     }
     const merged = deepMerge(local, cloud)
-    if (JSON.stringify(merged) !== JSON.stringify(local)) {
+    if (!sameJSON(merged, local)) {
       lsSet(key, merged)
       changed = true
     }
@@ -119,6 +131,9 @@ export default function App() {
   const [auth, setAuth] = useState(loadAuth)
   // syncReady：完成首次云端拉取合并后才允许上传（防止竞态覆盖云端数据）
   const [syncReady, setSyncReady] = useState(!auth)
+  // dataVersion：云端拉取到新数据时自增，用于让子组件重读本地数据
+  // （替代 window.location.reload()，避免刷新循环）
+  const [dataVersion, setDataVersion] = useState(0)
   const pullLockRef = useRef(false)
   const lastUploadedRef = useRef({})
   const { words, sentences, counts, source, loading } = useWords()
@@ -170,7 +185,9 @@ export default function App() {
         try {
           const changed = await pullAndMerge(auth.token)
           pulled = true
-          if (changed) window.location.reload() // 有新数据 → 刷新让所有组件重读隔离空间
+          // 用状态变更让页面重读本地数据，而不是 window.location.reload()。
+          // 刷新页面会重新走一遍同步流程，一旦合并逻辑不收敛就会变成无限刷新。
+          if (changed) setDataVersion((v) => v + 1)
         } catch (err) {
           if (/HTTP 401/.test(err.message || '')) {
             handleLogout() // token 过期
@@ -199,7 +216,9 @@ export default function App() {
     if (!auth) return
     for (const key of SYNC_KEYS) {
       const raw = lsGetJSON(key, undefined)
-      if (raw === undefined || lastUploadedRef.current[key] === JSON.stringify(raw)) continue
+      // 空值不上传：避免把 null 写进云端，否则会触发同步不收敛（无限刷新）
+      if (raw === undefined || raw === null) continue
+      if (lastUploadedRef.current[key] === JSON.stringify(raw)) continue
       try {
         await api.uploadUserData(auth.token, key, raw)
         lastUploadedRef.current[key] = JSON.stringify(raw)
@@ -225,6 +244,7 @@ export default function App() {
         if (changed) {
           // 拉到了新数据：更新界面状态，并把合并结果回传云端（两台设备最终一致）
           setFavorites(lsGetJSON('favorites', []))
+          setDataVersion((v) => v + 1)
           lastUploadedRef.current = {}
         }
       } catch {
@@ -261,7 +281,7 @@ export default function App() {
         onLogout={handleLogout}
       />
       <main className="main" id="main">
-        <PageTransition key={tab}>
+        <PageTransition key={`${tab}-${dataVersion}`}>
           {tab === 'home' && (
             <DailySentence
               onGo={() => setTab('cards')}

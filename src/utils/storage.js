@@ -11,7 +11,12 @@
  * 之后账号空间与云端同步，与匿名空间再无关系。
  */
 const AUTH_KEY = 'auth'
-const SYNC_KEYS = [
+/**
+ * 会随账号空间隔离、并同步到云端的学习数据。
+ * 注意：这里的每一项都必须是“有实际内容”的数据；
+ * 不要把 null/undefined 写进这些 key，否则同步无法收敛（详见 App.jsx 的 deepMerge）。
+ */
+export const SYNC_KEYS = [
   'favorites',
   'learnedWords',
   'wordReviewMeta',
