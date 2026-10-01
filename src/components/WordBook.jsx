@@ -1,10 +1,13 @@
 import { useState, useEffect, useMemo } from 'react'
 import { api } from '../api.js'
-import { speak } from '../utils/speak.js'
 import { recordReview, isDue, getDueIds, getNextReviewText } from '../utils/review.js'
 import { words as allWords } from '../data/words.js'
+import { toast } from '../utils/toast.js'
+import Icon from './Icons.jsx'
+import SpeakButton from './SpeakButton.jsx'
+import Reveal from './Reveal.jsx'
 
-export default function WordBook({ words, favorites, toggleFavorite }) {
+export default function WordBook({ words, favorites, toggleFavorite, onGo }) {
   const safeFavorites = Array.isArray(favorites) ? favorites : []
   const safeWords = Array.isArray(words) ? words : allWords
 
@@ -79,6 +82,10 @@ export default function WordBook({ words, favorites, toggleFavorite }) {
 
   // ===== 导出生词本（txt 下载） =====
   const exportWordbook = () => {
+    if (list.length === 0) {
+      toast('生词本为空，先去收藏些单词吧 📚', 'info')
+      return
+    }
     const lines = list.map(
       (w) =>
         `${w.word}  ${w.phonetic || ''}\n${w.meaning}` +
@@ -93,6 +100,7 @@ export default function WordBook({ words, favorites, toggleFavorite }) {
     a.download = `生词本-${new Date().toISOString().slice(0, 10)}.txt`
     a.click()
     URL.revokeObjectURL(url)
+    toast(`已导出 ${list.length} 个单词到 txt 文件 📥`, 'success')
   }
 
   // ===== 复习模式：待复习的词翻卡流 =====
@@ -124,13 +132,28 @@ export default function WordBook({ words, favorites, toggleFavorite }) {
   if (reviewing) {
     // 全部复习完
     if (reviewIndex >= reviewQueue.length) {
+      const total = reviewResult.known + reviewResult.unknown
+      const rate = total ? Math.round((reviewResult.known / total) * 100) : 0
       return (
         <div className="wordbook">
           <div className="card-page wordbook-empty">
-            <h2>🎉 复习完成！</h2>
+            <span className="empty-icon is-success">
+              <Icon name="check" size={26} strokeWidth={2.2} />
+            </span>
+            <h2>复习完成</h2>
             <p className="review-summary">
-              本次共复习 {reviewQueue.length} 词：认识 {reviewResult.known} · 不认识 {reviewResult.unknown}
+              本次共复习 <b className="num">{reviewQueue.length}</b> 词 · 认识{' '}
+              <b className="num tone-good">{reviewResult.known}</b> · 不认识{' '}
+              <b className="num tone-low">{reviewResult.unknown}</b>
             </p>
+            <div className="review-rate">
+              <div className="mastery-bar">
+                <span style={{ width: `${rate}%` }} />
+              </div>
+              <span className="mastery-text">
+                本次掌握率 <b className="num">{rate}%</b>
+              </span>
+            </div>
             <p className="muted">
               认识的词下次复习间隔自动翻倍，不认识的词仍会优先出现在待复习列表中。
             </p>
@@ -147,29 +170,32 @@ export default function WordBook({ words, favorites, toggleFavorite }) {
     return (
       <div className="flashcards">
         <div className="review-header">
-          <span>🔁 生词复习 · 第 {reviewIndex + 1} / {reviewQueue.length} 张</span>
-          <button className="btn btn-sm" onClick={() => setReviewing(false)}>退出复习</button>
+          <span>
+            <Icon name="refresh" size={15} />
+            生词复习 · 第 <b className="num">{reviewIndex + 1}</b> / {reviewQueue.length} 张
+          </span>
+          <button className="btn btn-sm" onClick={() => setReviewing(false)}>
+            退出复习
+          </button>
+        </div>
+        <div className="review-progress">
+          <span style={{ width: `${(reviewIndex / reviewQueue.length) * 100}%` }} />
         </div>
         <div
           className={`card-3d ${reviewFlipped ? 'flipped' : ''}`}
           onClick={() => setReviewFlipped(!reviewFlipped)}
         >
           <div className="card-face card-front">
-            <span className="card-level" style={{ background: '#f59e0b' }}>复习</span>
+            <span className="card-level" style={{ background: '#f59e0b' }}>
+              复习
+            </span>
             <h2 className="card-word">{reviewCard.word}</h2>
             {reviewCard.phonetic && <p className="card-phonetic">{reviewCard.phonetic}</p>}
-            <button
-              className="speak-btn"
-              onClick={(e) => {
-                e.stopPropagation()
-                speak(reviewCard.word)
-              }}
-              onTouchEnd={(e) => e.stopPropagation()}
-              title="播放发音"
-            >
-              🔊
-            </button>
-            <p className="card-hint">先回忆释义，再点击卡片翻面对答案</p>
+            <SpeakButton text={reviewCard.word} />
+            <p className="card-hint">
+              <Icon name="refresh" size={13} />
+              先回忆释义，再点击卡片翻面对答案
+            </p>
           </div>
           <div className="card-face card-back">
             <h3 className="card-meaning">{reviewCard.meaning}</h3>
@@ -183,10 +209,14 @@ export default function WordBook({ words, favorites, toggleFavorite }) {
         </div>
         <div className="card-controls">
           <button className="btn btn-red" onClick={() => reviewMark(false)}>
-            😕 不认识（稍后再复习）
+            <Icon name="close" size={16} />
+            不认识
+            <span className="btn-hint">稍后再复习</span>
           </button>
           <button className="btn btn-green" onClick={() => reviewMark(true)}>
-            😀 认识（间隔翻倍）
+            <Icon name="check" size={16} />
+            认识
+            <span className="btn-hint">间隔翻倍</span>
           </button>
         </div>
       </div>
@@ -197,9 +227,17 @@ export default function WordBook({ words, favorites, toggleFavorite }) {
   if (list.length === 0) {
     return (
       <div className="card-page wordbook-empty">
-        <h2>⭐ 我的生词本</h2>
-        <p className="muted">生词本是空的～</p>
-        <p className="muted">去「单词卡片」页面点击 ☆ 收藏不熟悉的单词吧！</p>
+        <span className="empty-icon">
+          <Icon name="star" size={26} />
+        </span>
+        <h2>我的生词本</h2>
+        <p className="muted">生词本还是空的。去「单词卡片」点击 ☆ 收藏不熟悉的单词吧。</p>
+        <div className="empty-actions">
+          <button className="btn btn-primary" onClick={() => onGo?.('cards')}>
+            <Icon name="cards" size={16} />
+            去背单词
+          </button>
+        </div>
       </div>
     )
   }
@@ -207,97 +245,103 @@ export default function WordBook({ words, favorites, toggleFavorite }) {
   // ===== 生词本列表 =====
   return (
     <div className="wordbook">
-      <h2>⭐ 我的生词本（{list.length} 个单词）</h2>
+      <header className="wordbook-head">
+        <div>
+          <h2>我的生词本</h2>
+          <p className="panel-sub">
+            共 <b className="num">{list.length}</b> 个单词 · 待复习{' '}
+            <b className="num">{dueCount}</b>
+          </p>
+        </div>
+        <div className="wordbook-actions">
+          <button
+            className="btn btn-primary"
+            onClick={startReview}
+            disabled={dueCount === 0}
+            title={dueCount === 0 ? '今天的复习任务都完成啦' : '开始间隔复习'}
+          >
+            <Icon name={dueCount === 0 ? 'check' : 'refresh'} size={16} />
+            {dueCount === 0 ? '今日已复习完' : `开始复习 (${dueCount})`}
+          </button>
+          <button className="btn" onClick={exportWordbook} title="导出为 txt 文件">
+            <Icon name="download" size={16} />
+            导出
+          </button>
+        </div>
+      </header>
 
-      {/* 待复习提示 */}
-      <div className="due-banner">
-        <span>
-          🔁 今日待复习 <strong>{dueCount}</strong> / {list.length} 词
-        </span>
-        <button
-          className="btn btn-primary btn-sm"
-          onClick={startReview}
-          disabled={dueCount === 0}
-          title={dueCount === 0 ? '今天的复习任务都完成啦' : '开始间隔复习'}
-        >
-          {dueCount === 0 ? '今日已复习完 ✓' : '开始复习'}
-        </button>
-      </div>
-
-      {/* 工具栏：搜索 + 筛选 + 导出 */}
+      {/* 工具栏：搜索 + 筛选 */}
       <div className="wordbook-toolbar">
-        <input
-          className="wordbook-search"
-          type="text"
-          placeholder="搜索单词或释义…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <div className="search-wrap">
+          <Icon name="search" size={17} className="search-icon" />
+          <input
+            className="wordbook-search"
+            type="search"
+            placeholder="搜索单词或释义…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            aria-label="搜索生词本"
+          />
+        </div>
         <div className="wordbook-filters">
           <button
             className={`chip ${filter === 'all' ? 'chip-active' : ''}`}
             style={filter === 'all' ? { background: 'var(--primary)', color: '#fff' } : {}}
             onClick={() => setFilter('all')}
           >
-            全部 {list.length}
+            全部 <span className="chip-num">{list.length}</span>
           </button>
           <button
             className={`chip ${filter === 'core' ? 'chip-active' : ''}`}
             style={filter === 'core' ? { background: '#3b82f6', color: '#fff' } : {}}
             onClick={() => setFilter('core')}
           >
-            精选 {coreCount}
+            精选 <span className="chip-num">{coreCount}</span>
           </button>
           <button
             className={`chip ${filter === 'cet6' ? 'chip-active' : ''}`}
             style={filter === 'cet6' ? { background: '#0d9488', color: '#fff' } : {}}
             onClick={() => setFilter('cet6')}
           >
-            六级 {cet6Count}
-          </button>
-          <button className="btn btn-sm" onClick={exportWordbook} title="导出为 txt 文件">
-            📤 导出
+            六级 <span className="chip-num">{cet6Count}</span>
           </button>
         </div>
       </div>
 
       <div className="wordbook-list">
-        {filtered.map((w) => (
-          <div className="wordbook-item" key={w.id}>
-            <div className="wordbook-info">
-              <div className="wordbook-word">
-                <strong>{w.word}</strong>
-                {w.phonetic && <span className="card-phonetic">{w.phonetic}</span>}
-                {!localIds.has(w.id) && <span className="book-tag book-tag-cet6">六级</span>}
-                <span className={`due-tag ${isDue(w.id) ? 'due-tag-hot' : ''}`}>
-                  {isDue(w.id) ? '待复习' : getNextReviewText(w.id)}
-                </span>
-              </div>
-              <div className="wordbook-meaning">{w.meaning}</div>
-              {w.example && (
-                <div className="wordbook-example">
-                  <p className="example-en">{w.example}</p>
-                  {w.exampleCn && <p className="example-cn">{w.exampleCn}</p>}
+        {filtered.map((w, i) => (
+          <Reveal key={w.id} delay={Math.min(i, 8) * 45} className="wordbook-row">
+            <div className="wordbook-item">
+              <div className="wordbook-info">
+                <div className="wordbook-word">
+                  <strong>{w.word}</strong>
+                  {w.phonetic && <span className="card-phonetic">{w.phonetic}</span>}
+                  {!localIds.has(w.id) && <span className="book-tag book-tag-cet6">六级</span>}
+                  <span className={`due-tag ${isDue(w.id) ? 'due-tag-hot' : ''}`}>
+                    {isDue(w.id) ? '待复习' : getNextReviewText(w.id)}
+                  </span>
                 </div>
-              )}
+                <div className="wordbook-meaning">{w.meaning}</div>
+                {w.example && (
+                  <div className="wordbook-example">
+                    <p className="example-en">{w.example}</p>
+                    {w.exampleCn && <p className="example-cn">{w.exampleCn}</p>}
+                  </div>
+                )}
+              </div>
+              <div className="wordbook-actions">
+                <SpeakButton text={w.word} variant="sm" />
+                <button
+                  className="btn btn-sm"
+                  onClick={() => toggleFavorite(w.id)}
+                  title="从生词本移除"
+                >
+                  <Icon name="close" size={14} />
+                  移除
+                </button>
+              </div>
             </div>
-            <div className="wordbook-actions">
-              <button
-                className="btn btn-sm"
-                onClick={() => speak(w.word)}
-                title="播放发音"
-              >
-                🔊
-              </button>
-              <button
-                className="btn btn-sm"
-                onClick={() => toggleFavorite(w.id)}
-                title="从生词本移除"
-              >
-                移除
-              </button>
-            </div>
-          </div>
+          </Reveal>
         ))}
         {filtered.length === 0 && (
           <p className="empty">没有匹配「{search}」的单词</p>

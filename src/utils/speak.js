@@ -100,14 +100,34 @@ function speakAudio(text) {
   })
 }
 
+// 朗读状态（供 UI 显示"正在播放"波纹）
+let speakingUntil = 0
+
+/** 当前是否正在朗读（含音频通道与 TTS 通道） */
+export function isSpeaking() {
+  if (Date.now() < speakingUntil) return true
+  try {
+    return typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.speaking
+  } catch {
+    return false
+  }
+}
+
 /**
  * 朗读一个英文单词/短语。
  * 优先词典真人发音，失败时回退浏览器 TTS。
  */
 export function speak(text, rate = 0.9) {
   if (!text) return
-  speakAudio(text).catch(() => {
-    // 音频通道失败（典型场景：词库生僻词、跨域限制、断网）→ TTS 兜底
-    speakTTS(text, rate)
-  })
+  // 预估朗读时长：约 90ms/字符，最少 900ms
+  speakingUntil = Date.now() + Math.max(900, text.length * 95)
+  speakAudio(text)
+    .catch(() => {
+      // 音频通道失败（典型场景：词库生僻词、跨域限制、断网）→ TTS 兜底
+      speakTTS(text, rate)
+    })
+    .finally(() => {
+      // 音频提前结束：缩短预估时间，让波纹尽快复位
+      speakingUntil = Math.min(speakingUntil, Date.now() + 400)
+    })
 }

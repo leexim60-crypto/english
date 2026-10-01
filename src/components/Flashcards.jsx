@@ -3,6 +3,10 @@ import { api } from '../api.js'
 import { speak } from '../utils/speak.js'
 import { recordReview, touchToday } from '../utils/review.js'
 import { lsGetJSON, lsSet } from '../utils/storage.js'
+import { toast } from '../utils/toast.js'
+import Icon from './Icons.jsx'
+import SpeakButton from './SpeakButton.jsx'
+import useSpotlight from '../hooks/useSpotlight.js'
 
 const LEVEL_NAMES = { 1: '基础', 2: '进阶', 3: '高阶' }
 const LEVEL_COLORS = { 1: '#22c55e', 2: '#f59e0b', 3: '#ef4444' }
@@ -17,6 +21,7 @@ function shuffle(arr) {
 }
 
 export default function Flashcards({ words, counts, source, favorites, toggleFavorite }) {
+  const spot = useSpotlight()
   // book: 'core' 精选词库（本地/数据库全量） | 'cet6' 六级词库（后端随机流）
   const [book, setBook] = useState('core')
   const [level, setLevel] = useState(1)
@@ -87,7 +92,10 @@ export default function Flashcards({ words, counts, source, favorites, toggleFav
     const card = book === 'core' ? coreList[index] : queue[index]
     if (!card) return
     if (known) {
-      if (!learned.includes(card.id)) saveLearned([...learned, card.id])
+      if (!learned.includes(card.id)) {
+        saveLearned([...learned, card.id])
+        toast('记住了！巩固一下更牢 💪', 'success', 1200)
+      }
       recordReview(card.id, true)
       next()
     } else {
@@ -183,13 +191,22 @@ export default function Flashcards({ words, counts, source, favorites, toggleFav
     return (
       <div className="flashcards">
         <div className="book-tabs">
-          <BookTab active={book === 'core'} onClick={() => setBook('core')}>⭐ 精选词库</BookTab>
-          <BookTab active={book === 'cet6'} onClick={() => setBook('cet6')}>🎓 六级词库</BookTab>
+          <BookTab active={book === 'core'} onClick={() => setBook('core')} icon="star">
+            精选词库
+          </BookTab>
+          <BookTab active={book === 'cet6'} onClick={() => setBook('cet6')} icon="book">
+            六级词库
+          </BookTab>
         </div>
         <div className="card-page wordbook-empty">
-          <h2>🎓 六级词库</h2>
+          <span className="empty-icon">
+            <Icon name="book" size={26} />
+          </span>
+          <h2>六级词库需要后端在线</h2>
           <p className="muted">六级词库存储在服务器数据库中，需要后端服务在线。</p>
-          <p className="muted">请先启动后端（server 目录 npm start），再切换到六级词库。</p>
+          <p className="muted">
+            请先启动后端（server 目录 <code>npm start</code>），再切换到六级词库。
+          </p>
           <button className="btn btn-primary" onClick={() => setBook('core')}>
             返回精选词库
           </button>
@@ -203,18 +220,31 @@ export default function Flashcards({ words, counts, source, favorites, toggleFav
     return (
       <div className="flashcards">
         <div className="book-tabs">
-          <BookTab active={book === 'core'} onClick={() => setBook('core')}>⭐ 精选词库</BookTab>
-          <BookTab active={book === 'cet6'} onClick={() => setBook('cet6')}>🎓 六级词库</BookTab>
+          <BookTab active={book === 'core'} onClick={() => setBook('core')} icon="star">
+            精选词库
+          </BookTab>
+          <BookTab active={book === 'cet6'} onClick={() => setBook('cet6')} icon="book">
+            六级词库
+          </BookTab>
         </div>
         <div className="card-page wordbook-empty">
-          <h2>🎓 六级词库</h2>
+          <span className="empty-icon">
+            <Icon name="book" size={26} />
+          </span>
+          <h2>六级词库</h2>
           {streamError ? (
             <>
               <p className="muted">题目加载失败，请检查网络后重试。</p>
               <button className="btn btn-primary" onClick={loadBatch}>重新加载</button>
             </>
           ) : (
-            <p className="muted">正在加载单词…</p>
+            <>
+              <div className="sk sk-flipcard">
+                <div className="sk sk-word" />
+                <div className="sk sk-phon" />
+              </div>
+              <p className="muted">正在加载单词…</p>
+            </>
           )}
         </div>
       </div>
@@ -232,62 +262,78 @@ export default function Flashcards({ words, counts, source, favorites, toggleFav
     const learnedInLevel = coreList.filter((w) => learned.includes(w.id)).length
     const progress = coreList.length ? Math.round((learnedInLevel / coreList.length) * 100) : 0
     progressInfo = (
-      <>
+      <div className="stack-progress">
         <div className="progress-bar">
           <div className="progress-fill" style={{ width: `${progress}%` }} />
         </div>
         <p className="progress-text">
-          本级别已掌握 {progress}%（{learnedInLevel}/{coreList.length}）
+          本级别已掌握 <b className="num">{progress}%</b>（{learnedInLevel}/{coreList.length}）
         </p>
-      </>
+      </div>
     )
   } else {
     progressInfo = (
       <p className="progress-text">
-        六级词库共 {cet6Total} 词 · 已掌握 {learned.length} 词 · 随机出卡
+        六级词库共 <b className="num">{cet6Total}</b> 词 · 已掌握 <b className="num">{learned.length}</b> 词 · 随机出卡
       </p>
     )
   }
 
   return (
     <div className="flashcards">
-      {/* 词书切换 */}
-      <div className="book-tabs">
-        <BookTab active={book === 'core'} onClick={() => setBook('core')}>⭐ 精选词库</BookTab>
-        <BookTab active={book === 'cet6'} onClick={() => setBook('cet6')}>🎓 六级词库</BookTab>
-      </div>
+      <div className="stack-head">
+        <div className="stack-head-row">
+          {/* 词书切换 */}
+          <div className="book-tabs">
+            <BookTab active={book === 'core'} onClick={() => setBook('core')} icon="star">
+              精选词库
+            </BookTab>
+            <BookTab active={book === 'cet6'} onClick={() => setBook('cet6')} icon="book">
+              六级词库
+            </BookTab>
+          </div>
 
-      {/* 精选词库显示难度级别；六级词库为随机流 */}
-      {book === 'core' && (
-        <div className="level-tabs">
-          {[1, 2, 3].map((l) => (
-            <button
-              key={l}
-              className={`chip ${level === l ? 'chip-active' : ''}`}
-              style={level === l ? { background: LEVEL_COLORS[l], color: '#fff' } : {}}
-              onClick={() => {
-                setLevel(l)
-                setIndex(0)
-                setFlipped(false)
-                setUnknownRevealed(false)
-              }}
-            >
-              {LEVEL_NAMES[l]} ({safeWords.filter((w) => w.level === l).length}词)
-            </button>
-          ))}
+          {/* 精选词库显示难度级别；六级词库为随机流 */}
+          {book === 'core' && (
+            <div className="level-tabs">
+              {[1, 2, 3].map((l) => (
+                <button
+                  key={l}
+                  className={`chip ${level === l ? 'chip-active' : ''}`}
+                  style={level === l ? { background: LEVEL_COLORS[l], color: '#fff' } : {}}
+                  onClick={() => {
+                    setLevel(l)
+                    setIndex(0)
+                    setFlipped(false)
+                    setUnknownRevealed(false)
+                  }}
+                >
+                  {LEVEL_NAMES[l]}
+                  <span className="chip-num">{safeWords.filter((w) => w.level === l).length}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-      )}
 
-      {progressInfo}
+        {progressInfo}
+      </div>
 
       {/* 标记"不认识"后：提示已入生词本，汉译已展示 */}
       {unknownRevealed && (
         <div className="unknown-banner">
-          📌 已加入生词本，汉译释义已翻面展示 · 记住后按「下一个」或 → 继续
+          <Icon name="star" size={16} />
+          已加入生词本，汉译释义已翻面展示 · 记住后按「下一个」或 → 继续
         </div>
       )}
 
-      <div className={`card-3d ${flipped ? 'flipped' : ''}`} onClick={() => setFlipped(!flipped)}>
+      <div
+        ref={spot.ref}
+        onMouseMove={spot.onMouseMove}
+        onMouseLeave={spot.onMouseLeave}
+        className={`card-3d ${flipped ? 'flipped' : ''} ${unknownRevealed ? 'is-marked' : ''}`}
+        onClick={() => setFlipped(!flipped)}
+      >
         <div className="card-face card-front">
           <span
             className="card-level"
@@ -299,18 +345,11 @@ export default function Flashcards({ words, counts, source, favorites, toggleFav
           </span>
           <h2 className="card-word">{card.word}</h2>
           {card.phonetic && <p className="card-phonetic">{card.phonetic}</p>}
-          <button
-            className="speak-btn"
-            onClick={(e) => {
-              e.stopPropagation()
-              speak(card.word)
-            }}
-            onTouchEnd={(e) => e.stopPropagation()}
-            title="播放发音"
-          >
-            🔊
-          </button>
-          <p className="card-hint">点击卡片查看释义 · 空格键翻面</p>
+          <SpeakButton text={card.word} />
+          <p className="card-hint">
+            <Icon name="refresh" size={13} />
+            点击卡片查看释义 · 空格键翻面
+          </p>
           <button
             className={`fav-btn ${isFav ? 'fav-active' : ''}`}
             onClick={(e) => {
@@ -318,8 +357,9 @@ export default function Flashcards({ words, counts, source, favorites, toggleFav
               favFromFront()
             }}
             title={isFav ? '从生词本移除' : '加入生词本（并展示释义）'}
+            aria-label={isFav ? '从生词本移除' : '加入生词本'}
           >
-            {isFav ? '⭐' : '☆'}
+            <Icon name="star" size={20} strokeWidth={isFav ? 0 : 1.7} fill={isFav ? 'currentColor' : 'none'} />
           </button>
         </div>
         <div className="card-face card-back">
@@ -335,33 +375,43 @@ export default function Flashcards({ words, counts, source, favorites, toggleFav
 
       <div className="card-controls">
         <button className="btn" onClick={prev} disabled={book === 'cet6' && index === 0}>
-          ← 上一个
+          <Icon name="arrowLeft" size={16} />
+          上一个
         </button>
         <button
           className="btn btn-red"
           onClick={() => mark(false)}
           title="不认识：自动加入生词本并翻面展示释义"
         >
-          😕 不认识
+          <Icon name="close" size={16} />
+          不认识
         </button>
         <button className="btn btn-green" onClick={() => mark(true)}>
-          😀 认识{book === 'cet6' && learnedSet.has(card.id) ? ' ✓' : ''}
+          <Icon name="check" size={16} />
+          认识{book === 'cet6' && learnedSet.has(card.id) ? ' ✓' : ''}
         </button>
-        <button className="btn" onClick={next}>下一个 →</button>
+        <button className="btn" onClick={next}>
+          下一个
+          <Icon name="arrowRight" size={16} />
+        </button>
       </div>
-      <p className="progress-text">
+
+      <p className="progress-text card-counter">
         {book === 'core'
           ? `${Math.min(index, coreList.length - 1) + 1} / ${coreList.length}`
           : `第 ${index + 1} 张${loadingMore ? ' · 加载中…' : ''}`}
       </p>
-      <p className="shortcut-hint">快捷键：空格 翻面 · ← → 切换 · ↑ 认识 · ↓ 不认识</p>
+      <p className="shortcut-hint">
+        <kbd>空格</kbd> 翻面 · <kbd>←</kbd> <kbd>→</kbd> 切换 · <kbd>↑</kbd> 认识 · <kbd>↓</kbd> 不认识
+      </p>
     </div>
   )
 }
 
-function BookTab({ active, onClick, children }) {
+function BookTab({ active, onClick, children, icon }) {
   return (
     <button className={`book-tab ${active ? 'book-tab-active' : ''}`} onClick={onClick}>
+      {icon && <Icon name={icon} size={15} />}
       {children}
     </button>
   )

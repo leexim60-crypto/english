@@ -2,15 +2,21 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import Navbar from './components/Navbar.jsx'
 import HelpModal from './components/HelpModal.jsx'
 import AuthModal from './components/AuthModal.jsx'
+import Toast from './components/Toast.jsx'
+import PageTransition from './components/PageTransition.jsx'
+import Aurora from './components/Aurora.jsx'
+import Icon from './components/Icons.jsx'
 import Flashcards from './components/Flashcards.jsx'
 import Quiz from './components/Quiz.jsx'
 import DailySentence from './components/DailySentence.jsx'
 import WordBook from './components/WordBook.jsx'
 import Phrases from './components/Phrases.jsx'
+import useScrollToTop from './hooks/useScrollToTop.js'
 import { useWords } from './hooks/useWords.js'
 import { api } from './api.js'
 import { clearReview } from './utils/review.js'
 import { lsGetJSON, lsSet, importAnonymousData } from './utils/storage.js'
+import { toast } from './utils/toast.js'
 
 /**
  * 数据同步架构（v3：按账号隔离）：
@@ -27,6 +33,14 @@ import { lsGetJSON, lsSet, importAnonymousData } from './utils/storage.js'
  */
 const SYNC_KEYS = ['favorites', 'learnedWords', 'wordReviewMeta', 'learnedPhrases', 'studyLog']
 const AUTH_KEY = 'auth'
+
+const TAB_TITLES = {
+  home: '首页',
+  cards: '单词卡片',
+  quiz: '单词测验',
+  phrases: '短语学习',
+  wordbook: '生词本',
+}
 
 function loadAuth() {
   try {
@@ -86,6 +100,7 @@ async function pullAndMerge(token) {
 
 export default function App() {
   const [tab, setTab] = useState('home')
+  const scrollTopVisible = useScrollToTop()
   const [helpOpen, setHelpOpen] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
   const [auth, setAuth] = useState(loadAuth)
@@ -103,7 +118,12 @@ export default function App() {
     setFavorites(next)
     lsSet('favorites', next)
     // 从生词本移除时，同步清理复习调度数据
-    if (removing) clearReview(id)
+    if (removing) {
+      clearReview(id)
+      toast('已从生词本移除', 'info', 1500)
+    } else {
+      toast('已加入生词本 ⭐', 'success', 1500)
+    }
   }
 
   const handleLogout = useCallback(() => {
@@ -113,8 +133,15 @@ export default function App() {
     setSyncReady(true)
     lastUploadedRef.current = {}
     setFavorites(lsGetJSON('favorites', []))
+    toast('已退出登录，账号数据已保留 ☁️', 'info')
     // 账号数据留在本地隔离空间 + 云端，下次登录自动恢复
   }, [])
+
+  // ===== 页面标题同步 + 切页时回到顶部 =====
+  useEffect(() => {
+    document.title = `英语学习网 · ${TAB_TITLES[tab] || '首页'}`
+    window.scrollTo({ top: 0, behavior: 'auto' })
+  }, [tab])
 
   // ===== 首次拉取：登录成功 / 已登录会话启动时，先合并云端再开上传 =====
   useEffect(() => {
@@ -151,6 +178,7 @@ export default function App() {
     lastUploadedRef.current = {}
     setSyncReady(false)
     setAuth(result) // 触发上面的导入 + 拉取合并 effect
+    toast(`欢迎回来，${result.user?.username || '同学'} 👋`, 'success')
   }, [])
 
   // ===== 上传：把当前账号空间所有 SYNC_KEYS 镜像到云端（未变化的跳过） =====
@@ -204,6 +232,10 @@ export default function App() {
 
   return (
     <div className="app">
+      <Aurora />
+      <a className="skip-link" href="#main">
+        跳到主要内容
+      </a>
       <Navbar
         tab={tab}
         setTab={setTab}
@@ -215,39 +247,57 @@ export default function App() {
         onLogin={() => setAuthOpen(true)}
         onLogout={handleLogout}
       />
-      <main className="main">
-        {tab === 'home' && (
-          <DailySentence
-            onGo={() => setTab('cards')}
-            onReview={() => setTab('wordbook')}
-            onHelp={() => setHelpOpen(true)}
-            sentences={sentences}
-            counts={counts}
-            favorites={favorites}
-          />
-        )}
-        {tab === 'cards' && (
-          <Flashcards
-            words={words}
-            counts={counts}
-            source={source}
-            favorites={favorites}
-            toggleFavorite={toggleFavorite}
-          />
-        )}
-        {tab === 'quiz' && (
-          <Quiz words={words} source={source} favorites={favorites} toggleFavorite={toggleFavorite} />
-        )}
-        {tab === 'phrases' && <Phrases source={source} />}
-        {tab === 'wordbook' && (
-          <WordBook words={words} favorites={favorites} toggleFavorite={toggleFavorite} />
-        )}
+      <main className="main" id="main">
+        <PageTransition key={tab}>
+          {tab === 'home' && (
+            <DailySentence
+              onGo={() => setTab('cards')}
+              onReview={() => setTab('wordbook')}
+              onHelp={() => setHelpOpen(true)}
+              sentences={sentences}
+              counts={counts}
+              favorites={favorites}
+            />
+          )}
+          {tab === 'cards' && (
+            <Flashcards
+              words={words}
+              counts={counts}
+              source={source}
+              favorites={favorites}
+              toggleFavorite={toggleFavorite}
+            />
+          )}
+          {tab === 'quiz' && (
+            <Quiz words={words} source={source} favorites={favorites} toggleFavorite={toggleFavorite} />
+          )}
+          {tab === 'phrases' && <Phrases source={source} />}
+          {tab === 'wordbook' && (
+            <WordBook
+              words={words}
+              favorites={favorites}
+              toggleFavorite={toggleFavorite}
+              onGo={setTab}
+            />
+          )}
+        </PageTransition>
       </main>
+      <button
+        className={`back-to-top ${scrollTopVisible ? 'back-to-top-visible' : ''}`}
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        aria-label="回到顶部"
+        title="回到顶部"
+      >
+        <Icon name="arrowUp" size={18} strokeWidth={2} />
+      </button>
       <footer className="footer">
-        <p>🎓 英语学习网 · 每天进步一点点 · Keep Learning!</p>
+        <span className="footer-brand">英语学习网</span>
+        <span className="footer-dot" />
+        <span>A little progress every day</span>
       </footer>
       <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} onLoginSuccess={handleLoginSuccess} />
+      <Toast />
     </div>
   )
 }
