@@ -37,13 +37,5 @@ export const words = [
   { id: 30, word: 'sophisticated', phonetic: '/səˈfɪstɪkeɪtɪd/', meaning: 'adj. 复杂的，精密的', level: 3, example: 'The software uses sophisticated algorithms.', exampleCn: '这个软件使用了复杂的算法。' },
 ]
 
-// 每日一句
-export const sentences = [
-  { en: 'The best way to predict the future is to create it.', cn: '预测未来的最好方式就是创造未来。', author: 'Peter Drucker' },
-  { en: 'Practice makes perfect.', cn: '熟能生巧。', author: '谚语' },
-  { en: 'A journey of a thousand miles begins with a single step.', cn: '千里之行，始于足下。', author: '老子' },
-  { en: 'Learning never exhausts the mind.', cn: '学无止境。', author: 'Leonardo da Vinci' },
-  { en: 'The limits of my language mean the limits of my world.', cn: '我语言的界限，就是我世界的界限。', author: 'Wittgenstein' },
-  { en: 'Live as if you were to die tomorrow. Learn as if you were to live forever.', cn: '如同明日将死般生活，如同永远不死般学习。', author: 'Gandhi' },
-  { en: 'Mistakes are proof that you are trying.', cn: '犯错证明你在尝试。', author: '佚名' },
-]
+// 每日一句：语料库独立维护，见 ./sentences.js
+export { sentences } from './sentences.js'

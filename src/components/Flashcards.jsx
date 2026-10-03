@@ -6,10 +6,10 @@ import { lsGetJSON, lsSet } from '../utils/storage.js'
 import { toast } from '../utils/toast.js'
 import Icon from './Icons.jsx'
 import SpeakButton from './SpeakButton.jsx'
-import useSpotlight from '../hooks/useSpotlight.js'
 
 const LEVEL_NAMES = { 1: '基础', 2: '进阶', 3: '高阶' }
-const LEVEL_COLORS = { 1: '#22c55e', 2: '#f59e0b', 3: '#ef4444' }
+/* 与设计系统一致的语义色：低阶绿 / 中阶铜 / 高阶红，均降低饱和度 */
+const LEVEL_COLORS = { 1: '#2f6b4f', 2: '#a75d2b', 3: '#a63a35' }
 
 function shuffle(arr) {
   const a = [...arr]
@@ -21,7 +21,6 @@ function shuffle(arr) {
 }
 
 export default function Flashcards({ words, counts, source, favorites, toggleFavorite }) {
-  const spot = useSpotlight()
   // book: 'core' 精选词库（本地/数据库全量） | 'cet6' 六级词库（后端随机流）
   const [book, setBook] = useState('core')
   const [level, setLevel] = useState(1)
@@ -328,9 +327,6 @@ export default function Flashcards({ words, counts, source, favorites, toggleFav
       )}
 
       <div
-        ref={spot.ref}
-        onMouseMove={spot.onMouseMove}
-        onMouseLeave={spot.onMouseLeave}
         className={`card-3d ${flipped ? 'flipped' : ''} ${unknownRevealed ? 'is-marked' : ''}`}
         onClick={() => setFlipped(!flipped)}
       >
@@ -338,7 +334,7 @@ export default function Flashcards({ words, counts, source, favorites, toggleFav
           <span
             className="card-level"
             style={{
-              background: book === 'cet6' ? '#0d9488' : LEVEL_COLORS[card.level] || '#3b82f6',
+              background: book === 'cet6' ? '#2c5c74' : LEVEL_COLORS[card.level] || '#1f3d5c',
             }}
           >
             {book === 'cet6' ? '六级' : LEVEL_NAMES[card.level] || '基础'}

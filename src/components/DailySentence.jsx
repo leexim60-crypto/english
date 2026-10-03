@@ -1,5 +1,7 @@
+import { useState, useMemo } from 'react'
 import { getStreak, getDueIds } from '../utils/review.js'
 import { lsGetJSON } from '../utils/storage.js'
+import { PATTERN_STATS } from '../data/patterns.js'
 import Icon from './Icons.jsx'
 import CountUp from './CountUp.jsx'
 import Reveal from './Reveal.jsx'
@@ -32,13 +34,18 @@ export default function DailySentence({
   favorites,
 }) {
   const today = new Date()
-  const index = today.getFullYear() * 372 + today.getMonth() * 31 + today.getDate()
+  // 每天固定推一句；「换一句」在当天的基础上往后翻，不写盘（次日自动回到当日句）
+  const dayIndex = today.getFullYear() * 372 + today.getMonth() * 31 + today.getDate()
+  const [offset, setOffset] = useState(0)
   const safeSentences = Array.isArray(sentences) && sentences.length > 0 ? sentences : []
-  const sentence = safeSentences.length > 0 ? safeSentences[index % safeSentences.length] : null
+  const sentenceTotal = safeSentences.length
+  const pick = sentenceTotal > 0 ? (dayIndex + offset) % sentenceTotal : 0
+  const sentence = sentenceTotal > 0 ? safeSentences[pick] : null
+
+  const nextSentence = () => setOffset((o) => o + 1)
 
   const learned = lsGetJSON('learnedWords', [])
   const learnedCount = Array.isArray(learned) ? learned.length : 0
-
   const safeFavorites = Array.isArray(favorites) ? favorites : []
   const streak = getStreak()
   const dueCount = getDueIds(safeFavorites).length
@@ -50,10 +57,10 @@ export default function DailySentence({
   const mastered = total ? Math.min(Math.round((learnedCount / total) * 100), 100) : 0
 
   const stats = [
-    { icon: 'book', label: '词汇总量', value: total, sub: cet6 > 0 ? `含六级 ${cet6}` : '精选词库', color: '#4f6bf2' },
-    { icon: 'check', label: '已学习', value: learnedCount, sub: `掌握 ${mastered}%`, color: '#10b981' },
-    { icon: 'target', label: '待学习', value: Math.max(total - learnedCount, 0), sub: '保持节奏', color: '#f59e0b' },
-    { icon: 'flame', label: '连续打卡', value: streak, sub: '天', color: '#f43f5e' },
+    { icon: 'book', label: '词汇总量', value: total, sub: cet6 > 0 ? `含六级 ${cet6}` : '精选词库', color: 'var(--c-vocab)' },
+    { icon: 'check', label: '已学习', value: learnedCount, sub: `掌握 ${mastered}%`, color: 'var(--c-learned)' },
+    { icon: 'target', label: '待学习', value: Math.max(total - learnedCount, 0), sub: '保持节奏', color: 'var(--c-todo)' },
+    { icon: 'flame', label: '连续打卡', value: streak, sub: '天', color: 'var(--c-streak)' },
   ]
 
   const dateText = today.toLocaleDateString('zh-CN', {
@@ -125,7 +132,18 @@ export default function DailySentence({
               <span className="sentence-label">
                 <Icon name="sparkle" size={13} /> Quote of the day
               </span>
-              <SpeakButton text={sentence.en} variant="ghost" title="朗读整句" />
+              <div className="sentence-actions">
+                {sentenceTotal > 1 && (
+                  <button className="sentence-next" onClick={nextSentence} title="换一句">
+                    <Icon name="refresh" size={14} />
+                    换一句
+                    <span className="sentence-count num">
+                      {pick + 1}/{sentenceTotal}
+                    </span>
+                  </button>
+                )}
+                <SpeakButton text={sentence.en} variant="ghost" title="朗读整句" />
+              </div>
             </div>
             <blockquote className="sentence-en">{sentence.en}</blockquote>
             <p className="sentence-cn">{sentence.cn}</p>
@@ -193,7 +211,10 @@ export default function DailySentence({
             </span>
             <span className="module-body">
               <span className="module-title">高分句型</span>
-              <span className="module-desc">30 个四六级／考研作文句式，标注使用场景与易错点</span>
+              <span className="module-desc">
+                {PATTERN_STATS.total} 个作文句式（含 {PATTERN_STATS.expert} 个很高级结构），
+                标注使用场景、易错点与「平庸 → 高分」对照
+              </span>
             </span>
             <Icon name="arrowRight" size={17} className="module-arrow" />
           </button>

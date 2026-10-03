@@ -4,7 +4,6 @@ import HelpModal from './components/HelpModal.jsx'
 import AuthModal from './components/AuthModal.jsx'
 import Toast from './components/Toast.jsx'
 import PageTransition from './components/PageTransition.jsx'
-import Aurora from './components/Aurora.jsx'
 import Icon from './components/Icons.jsx'
 import Flashcards from './components/Flashcards.jsx'
 import Quiz from './components/Quiz.jsx'
@@ -265,7 +264,6 @@ export default function App() {
 
   return (
     <div className="app">
-      <Aurora />
       <a className="skip-link" href="#main">
         跳到主要内容
       </a>

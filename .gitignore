@@ -6,3 +6,7 @@ dist
 server/.env
 nul
 server-test.log
+
+# 本地验证产物
+shots/
+*.local.mjs

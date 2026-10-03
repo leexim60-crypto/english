@@ -186,7 +186,7 @@ export default function WordBook({ words, favorites, toggleFavorite, onGo }) {
           onClick={() => setReviewFlipped(!reviewFlipped)}
         >
           <div className="card-face card-front">
-            <span className="card-level" style={{ background: '#f59e0b' }}>
+            <span className="card-level" style={{ background: '#a75d2b' }}>
               复习
             </span>
             <h2 className="card-word">{reviewCard.word}</h2>
@@ -293,14 +293,14 @@ export default function WordBook({ words, favorites, toggleFavorite, onGo }) {
           </button>
           <button
             className={`chip ${filter === 'core' ? 'chip-active' : ''}`}
-            style={filter === 'core' ? { background: '#3b82f6', color: '#fff' } : {}}
+            style={filter === 'core' ? { background: '#1f3d5c', color: '#fff' } : {}}
             onClick={() => setFilter('core')}
           >
             精选 <span className="chip-num">{coreCount}</span>
           </button>
           <button
             className={`chip ${filter === 'cet6' ? 'chip-active' : ''}`}
-            style={filter === 'cet6' ? { background: '#0d9488', color: '#fff' } : {}}
+            style={filter === 'cet6' ? { background: '#2c5c74', color: '#fff' } : {}}
             onClick={() => setFilter('cet6')}
           >
             六级 <span className="chip-num">{cet6Count}</span>
