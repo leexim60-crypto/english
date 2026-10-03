@@ -7,7 +7,7 @@
  *  - 不认识：重置为待复习（立即到期）
  */
 
-import { lsGetJSON, lsSet } from './storage.js'
+import { lsGetObject, lsSet } from './storage.js'
 
 const META_KEY = 'wordReviewMeta'
 const LOG_KEY = 'studyLog'
@@ -19,7 +19,7 @@ function todayStr(d = new Date()) {
 }
 
 export function loadMeta() {
-  return lsGetJSON(META_KEY, {})
+  return lsGetObject(META_KEY)
 }
 
 function saveMeta(meta) {
@@ -77,15 +77,14 @@ export function getNextReviewText(id) {
 
 /** 记录今天有学习行为（打卡） */
 export function touchToday() {
-  const log = lsGetJSON(LOG_KEY, {})
+  const log = lsGetObject(LOG_KEY)
   log[todayStr()] = true
   lsSet(LOG_KEY, log)
 }
 
 /** 连续打卡天数（今天没学也不断签，从昨天往回数） */
 export function getStreak() {
-  const log = lsGetJSON(LOG_KEY, {})
-  if (!log) return 0
+  const log = lsGetObject(LOG_KEY)
   let streak = 0
   const d = new Date()
   if (!log[todayStr()]) d.setDate(d.getDate() - 1) // 今天还没学不算断

@@ -10,7 +10,7 @@ import {
   FORM_ORDER,
   PATTERN_STATS,
 } from '../data/patterns.js'
-import { lsGetJSON, lsSet } from '../utils/storage.js'
+import { lsGetArray, lsSet } from '../utils/storage.js'
 import { toast } from '../utils/toast.js'
 import Icon from './Icons.jsx'
 import Reveal from './Reveal.jsx'
@@ -34,7 +34,7 @@ export default function SentencePatterns() {
   const [form, setForm] = useState('all')
   const [search, setSearch] = useState('')
   const [openId, setOpenId] = useState(null)
-  const [mastered, setMastered] = useState(() => lsGetJSON('masteredPatterns', []))
+  const [mastered, setMastered] = useState(() => lsGetArray('masteredPatterns'))
 
   const masteredSet = useMemo(() => new Set(mastered), [mastered])
 

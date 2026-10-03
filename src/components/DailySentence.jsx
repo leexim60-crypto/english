@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { getStreak, getDueIds } from '../utils/review.js'
-import { lsGetJSON } from '../utils/storage.js'
+import { lsGetArray, lsGetObject } from '../utils/storage.js'
 import { PATTERN_STATS } from '../data/patterns.js'
 import Icon from './Icons.jsx'
 import CountUp from './CountUp.jsx'
@@ -11,7 +11,7 @@ const WEEK = ['日', '一', '二', '三', '四', '五', '六']
 
 /** 最近 7 天打卡热力条（含今天，用于把"连续打卡"可视化） */
 function buildWeek() {
-  const log = lsGetJSON('studyLog', {}) || {}
+  const log = lsGetObject('studyLog')
   const out = []
   const p = (n) => String(n).padStart(2, '0')
   for (let i = 6; i >= 0; i--) {
@@ -44,8 +44,8 @@ export default function DailySentence({
 
   const nextSentence = () => setOffset((o) => o + 1)
 
-  const learned = lsGetJSON('learnedWords', [])
-  const learnedCount = Array.isArray(learned) ? learned.length : 0
+  const learned = lsGetArray('learnedWords')
+  const learnedCount = learned.length
   const safeFavorites = Array.isArray(favorites) ? favorites : []
   const streak = getStreak()
   const dueCount = getDueIds(safeFavorites).length

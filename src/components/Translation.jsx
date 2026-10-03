@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { translations, TOPICS, TOPIC_NAMES } from '../data/translations.js'
-import { lsGetJSON, lsSet } from '../utils/storage.js'
+import { lsGetArray, lsGetStringMap, lsSet } from '../utils/storage.js'
 import { toast } from '../utils/toast.js'
 import Icon from './Icons.jsx'
 import Reveal from './Reveal.jsx'
@@ -31,8 +31,8 @@ export default function Translation() {
   const [openId, setOpenId] = useState(null)
 
   // 用户译文草稿（按题目 id 保存，刷新不丢）
-  const [drafts, setDrafts] = useState(() => lsGetJSON('translationDrafts', {}))
-  const [done, setDone] = useState(() => lsGetJSON('translationDone', []))
+  const [drafts, setDrafts] = useState(() => lsGetStringMap('translationDrafts'))
+  const [done, setDone] = useState(() => lsGetArray('translationDone'))
   const saveTimer = useRef(null)
 
   const doneSet = useMemo(() => new Set(done), [done])

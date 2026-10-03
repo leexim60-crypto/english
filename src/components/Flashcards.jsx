@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { api } from '../api.js'
 import { speak } from '../utils/speak.js'
 import { recordReview, touchToday } from '../utils/review.js'
-import { lsGetJSON, lsSet } from '../utils/storage.js'
+import { lsGetArray, lsSet } from '../utils/storage.js'
 import { toast } from '../utils/toast.js'
 import Icon from './Icons.jsx'
 import SpeakButton from './SpeakButton.jsx'
@@ -28,7 +28,7 @@ export default function Flashcards({ words, counts, source, favorites, toggleFav
   const [flipped, setFlipped] = useState(false)
   // 刚标记"不认识"：翻转展示释义，停在当前卡片等待用户主动继续
   const [unknownRevealed, setUnknownRevealed] = useState(false)
-  const [learned, setLearned] = useState(() => lsGetJSON('learnedWords', []))
+  const [learned, setLearned] = useState(() => lsGetArray('learnedWords'))
 
   // ===== 六级随机流状态 =====
   const [queue, setQueue] = useState([])

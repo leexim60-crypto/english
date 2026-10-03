@@ -4,6 +4,7 @@ import HelpModal from './components/HelpModal.jsx'
 import AuthModal from './components/AuthModal.jsx'
 import Toast from './components/Toast.jsx'
 import PageTransition from './components/PageTransition.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 import Icon from './components/Icons.jsx'
 import Flashcards from './components/Flashcards.jsx'
 import Quiz from './components/Quiz.jsx'
@@ -16,7 +17,14 @@ import useScrollToTop from './hooks/useScrollToTop.js'
 import { useWords } from './hooks/useWords.js'
 import { api } from './api.js'
 import { clearReview } from './utils/review.js'
-import { lsGetJSON, lsSet, importAnonymousData, SYNC_KEYS } from './utils/storage.js'
+import {
+  lsGetArray,
+  lsGetJSON,
+  lsSet,
+  sanitize,
+  importAnonymousData,
+  SYNC_KEYS,
+} from './utils/storage.js'
 import { toast } from './utils/toast.js'
 
 /**
@@ -104,9 +112,14 @@ async function pullAndMerge(token) {
   const { data } = await api.getUserData(token)
   let changed = false
   for (const key of SYNC_KEYS) {
-    const cloud = data[key]
+    const raw = data[key]
     // 云端无此 key，或值是 null/undefined：视为“无数据”，不动本地
-    if (cloud === undefined || cloud === null) continue
+    if (raw === undefined || raw === null) continue
+    // 按 key 校验云端形状。历史上出现过「对象与数组深度合并」把
+    // 本应是数组的 key 变成对象，写回本地后直接让页面崩溃的情况，
+    // 所以形状不符的云端值一律丢弃，不落地。
+    const cloud = sanitize(key, raw)
+    if (cloud === null) continue
     const local = lsGetJSON(key, null)
     if (local === null) {
       lsSet(key, cloud)
@@ -137,7 +150,7 @@ export default function App() {
   const lastUploadedRef = useRef({})
   const { words, sentences, counts, source, loading } = useWords()
 
-  const [favorites, setFavorites] = useState(() => lsGetJSON('favorites', []))
+  const [favorites, setFavorites] = useState(() => lsGetArray('favorites'))
 
   const toggleFavorite = (id) => {
     const removing = favorites.includes(id)
@@ -159,7 +172,7 @@ export default function App() {
     setAuth(null)
     setSyncReady(true)
     lastUploadedRef.current = {}
-    setFavorites(lsGetJSON('favorites', []))
+    setFavorites(lsGetArray('favorites'))
     toast('已退出登录，账号数据已保留 ☁️', 'info')
     // 账号数据留在本地隔离空间 + 云端，下次登录自动恢复
   }, [])
@@ -196,7 +209,7 @@ export default function App() {
         }
       }
       // 拉取始终失败（断网等）：照常允许上传，不能因为同步问题卡住学习
-      setFavorites(lsGetJSON('favorites', []))
+      setFavorites(lsGetArray('favorites'))
       setSyncReady(true)
       pullLockRef.current = false
     })()
@@ -242,7 +255,7 @@ export default function App() {
         const changed = await pullAndMerge(auth.token)
         if (changed) {
           // 拉到了新数据：更新界面状态，并把合并结果回传云端（两台设备最终一致）
-          setFavorites(lsGetJSON('favorites', []))
+          setFavorites(lsGetArray('favorites'))
           setDataVersion((v) => v + 1)
           lastUploadedRef.current = {}
         }
@@ -279,7 +292,10 @@ export default function App() {
         onLogout={handleLogout}
       />
       <main className="main" id="main">
-        <PageTransition key={`${tab}-${dataVersion}`}>
+        {/* 每个 tab 各包一层错误边界：某个页面因脏数据崩掉时，
+            导航栏和其它页面仍可用，且给出可恢复的提示而不是全白。 */}
+        <ErrorBoundary key={tab}>
+          <PageTransition key={`${tab}-${dataVersion}`}>
           {tab === 'home' && (
             <DailySentence
               onGo={() => setTab('cards')}
@@ -315,7 +331,8 @@ export default function App() {
               onGo={setTab}
             />
           )}
-        </PageTransition>
+          </PageTransition>
+        </ErrorBoundary>
       </main>
       <button
         className={`back-to-top ${scrollTopVisible ? 'back-to-top-visible' : ''}`}

@@ -4684,6 +4684,77 @@ html[data-theme='dark'] .fb-easy .fb-tag {
 }
 
 /* ============================================================
+   错误边界（页面级崩溃兜底）
+   ============================================================ */
+.crash {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: clamp(36px, 7vw, 64px) clamp(20px, 4vw, 40px);
+  text-align: center;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--amber);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+.crash-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 4px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--amber) 40%, transparent);
+  color: var(--amber);
+}
+.crash-title {
+  font-family: var(--font-serif);
+  font-size: 21px;
+  font-weight: 500;
+}
+.crash-desc {
+  max-width: 54ch;
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: var(--muted);
+}
+.crash-detail {
+  max-width: 100%;
+  margin-top: 4px;
+  padding: 9px 13px;
+  border-radius: var(--radius-xs);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+  text-align: left;
+  overflow-x: auto;
+}
+.crash-actions {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 6px;
+}
+.crash-note {
+  max-width: 52ch;
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--faint);
+}
+.crash-note b {
+  color: var(--text-2);
+  font-weight: 650;
+}
+
+/* ============================================================
    响应式
    ============================================================ */
 

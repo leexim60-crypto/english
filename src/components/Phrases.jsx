@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../api.js'
-import { lsGetJSON, lsSet } from '../utils/storage.js'
+import { lsGetArray, lsSet } from '../utils/storage.js'
 import { toast } from '../utils/toast.js'
 import Icon from './Icons.jsx'
 import SpeakButton from './SpeakButton.jsx'
@@ -30,7 +30,7 @@ export default function Phrases({ source }) {
   })
 
   // 已学会（localStorage 持久化）
-  const [learnedIds, setLearnedIds] = useState(() => lsGetJSON('learnedPhrases', []))
+  const [learnedIds, setLearnedIds] = useState(() => lsGetArray('learnedPhrases'))
   const learnedSet = new Set(learnedIds)
 
   // 复习模式：查看已学会列表
